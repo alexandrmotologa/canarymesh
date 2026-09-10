@@ -1,0 +1,13 @@
+name: strict-sla-canary
+description: Fast canary with strict 200ms latency and 0.5% error limit
+sla:
+  max_error_rate_percent: 0.5
+  max_p99_latency_ms: 200.0
+  min_sample_size: 10
+steps:
+  - weight: 10.0
+    duration_seconds: 15
+  - weight: 50.0
+    duration_seconds: 30
+  - weight: 100.0
+    duration_seconds: 0

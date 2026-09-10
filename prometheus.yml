@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 2s
+
+scrape_configs:
+  - job_name: "canarymesh"
+    static_configs:
+      - targets: ["canarymesh:8090"]

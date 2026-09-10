@@ -1,0 +1,38 @@
+services:
+  upstream-v1:
+    build: .
+    command: ["mock", "--port-v1", "8081", "--port-v2", "9999"]
+    expose:
+      - "8081"
+
+  upstream-v2:
+    build: .
+    command: ["mock", "--port-v1", "9999", "--port-v2", "8082", "--inject-errors", "--error-rate", "25"]
+    expose:
+      - "8082"
+
+  canarymesh:
+    build: .
+    command: [
+      "start",
+      "--stable", "http://upstream-v1:8081",
+      "--canary", "http://upstream-v2:8082",
+      "--weight", "20",
+      "--proxy-port", "8080",
+      "--control-port", "8090"
+    ]
+    ports:
+      - "8080:8080"
+      - "8090:8090"
+    depends_on:
+      - upstream-v1
+      - upstream-v2
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      - canarymesh

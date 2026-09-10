@@ -1,0 +1,11 @@
+name: progressive-rollout
+description: Gradual canary rollout with staged soak intervals
+steps:
+  - weight: 5.0
+    duration_seconds: 15
+  - weight: 25.0
+    duration_seconds: 30
+  - weight: 50.0
+    duration_seconds: 30
+  - weight: 100.0
+    duration_seconds: 0
