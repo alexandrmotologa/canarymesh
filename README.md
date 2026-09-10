@@ -1,17 +1,19 @@
-<div align="center">
+<p align="center">
+  <img src="docs/images/logo.png?raw=true" alt="CanaryMesh Logo" width="140" style="border-radius: 28px;" />
+</p>
 
-<img src="docs/images/logo.png" alt="CanaryMesh Logo" width="160" />
+<h1 align="center">CanaryMesh</h1>
 
-# CanaryMesh
+<p align="center">
+  <strong>Edge reverse proxy and automated rollback supervisor for progressive canary deployments.</strong>
+</p>
 
-**Edge reverse proxy and automated rollback supervisor for progressive canary deployments.**
-
-[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com)
-[![HTTPX](https://img.shields.io/badge/HTTPX-async%20streaming-111827.svg)](https://www.python-httpx.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-
-</div>
+<p align="center">
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.12+-blue.svg" alt="Python 3.12+" /></a>
+  <a href="https://fastapi.tiangolo.com"><img src="https://img.shields.io/badge/FastAPI-0.115+-009688.svg" alt="FastAPI" /></a>
+  <a href="https://www.python-httpx.org"><img src="https://img.shields.io/badge/HTTPX-async%20streaming-111827.svg" alt="HTTPX" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT" /></a>
+</p>
 
 ---
 

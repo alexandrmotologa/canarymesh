@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <clipPath id="squircle-clip-h">
+      <rect x="24" y="24" width="976" height="976" rx="220" />
+    </clipPath>
+
+    <!-- Obsidian & Slate Armor -->
+    <linearGradient id="hex-obs-dark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#080c14"/>
+    </linearGradient>
+    <linearGradient id="hex-obs-mid" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="hex-obs-light" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#475569"/>
+      <stop offset="100%" stop-color="#334155"/>
+    </linearGradient>
+
+    <!-- Radiant Canary Gold -->
+    <linearGradient id="hex-gold-bright" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="35%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <linearGradient id="hex-gold-shadow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="65%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#9a3412"/>
+    </linearGradient>
+
+    <!-- Electric Cyan Telemetry -->
+    <linearGradient id="hex-cyan-bright" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#00f5ff"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+    <linearGradient id="hex-cyan-deep" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#082f49"/>
+    </linearGradient>
+
+    <filter id="shadow-heraldic" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#080c14" flood-opacity="0.14" />
+    </filter>
+  </defs>
+
+  <!-- Luxury White Squircle Container -->
+  <rect x="24" y="24" width="976" height="976" rx="220" fill="#ffffff" stroke="#e2e8f0" stroke-width="6" />
+
+  <g clip-path="url(#squircle-clip-h)">
+    <g transform="translate(512, 512)" filter="url(#shadow-heraldic)">
+
+      <!-- Massive 40px Hexagonal Architectural Gateway Frame -->
+      <polygon points="
+        0,-390
+        338,-195
+        338,195
+        0,390
+        -338,195
+        -338,-195
+      " fill="none" stroke="#0f172a" stroke-width="40" stroke-linejoin="round" />
+
+      <!-- Inner Hexagon Accent (Canary Gold) -->
+      <polygon points="
+        0,-355
+        307,-177
+        307,177
+        0,355
+        -307,177
+        -307,-177
+      " fill="none" stroke="#fbbf24" stroke-width="4" opacity="0.45" stroke-dasharray="16, 12" />
+
+      <!-- ================= SWEEPING ORIGAMI WINGS (85% Frame Mass) ================= -->
+
+      <!-- TIER 1: UPPER FLIGHT WINGTIPS (Canary Gold Primary Flight Blades) -->
+      <polygon points="-50,-80 -290,-170 -230,-50 -60,-25" fill="url(#hex-gold-bright)" />
+      <polygon points="50,-80 290,-170 230,-50 60,-25" fill="url(#hex-gold-bright)" />
+
+      <!-- Upper Wing Mid-Planes -->
+      <polygon points="-60,-25 -230,-50 -160,25 -55,20" fill="url(#hex-gold-shadow)" />
+      <polygon points="60,-25 230,-50 160,25 55,20" fill="#fef08a" opacity="0.4" />
+
+      <!-- TIER 2: MID WING BLADES (Obsidian Stealth Shields) -->
+      <polygon points="-55,20 -230,-50 -265,65 -75,65" fill="url(#hex-obs-dark)" />
+      <polygon points="55,20 230,-50 265,65 75,65" fill="url(#hex-obs-mid)" />
+
+      <!-- TIER 3: LOWER TELEMETRY BLADES (Electric Cyan Streams) -->
+      <polygon points="-75,65 -265,65 -195,175 -55,120" fill="url(#hex-cyan-deep)" />
+      <polygon points="75,65 265,65 195,175 55,120" fill="url(#hex-cyan-bright)" />
+
+      <!-- TAIL FEATHERS (Downward Traffic Stabilizers) -->
+      <polygon points="0,110 -35,175 0,295 35,175" fill="url(#hex-obs-dark)" />
+      <polygon points="0,130 0,295 25,175" fill="url(#hex-obs-mid)" />
+      <polygon points="-35,175 -80,245 -35,265 -15,195" fill="url(#hex-gold-shadow)" />
+      <polygon points="35,175 80,245 35,265 15,195" fill="url(#hex-cyan-bright)" />
+
+      <!-- MUSCULAR CHEST / BREAST KEEL -->
+      <polygon points="0,-70 -60,-70 -75,65 -35,140 0,110" fill="url(#hex-obs-dark)" />
+      <polygon points="0,-70 60,-70 75,65 35,140 0,110" fill="url(#hex-obs-mid)" />
+
+      <!-- Pure White Diamond Breast Keel -->
+      <polygon points="0,-60 -40,20 0,90 40,20" fill="#ffffff" />
+      <polygon points="0,-60 -40,20 0,90" fill="url(#hex-obs-light)" />
+      <polygon points="0,-60 0,90 40,20" fill="#ffffff" />
+
+      <!-- Golden Throat Gorget -->
+      <polygon points="0,-115 -35,-70 0,-35 35,-70" fill="url(#hex-gold-bright)" />
+      <polygon points="0,-115 -35,-70 0,-35" fill="url(#hex-gold-shadow)" />
+
+      <!-- ALERT CANARY HEAD & MULTI-TIERED CREST -->
+      <polygon points="0,-290 -28,-225 0,-185" fill="url(#hex-gold-shadow)" />
+      <polygon points="0,-290 28,-225 0,-185" fill="url(#hex-gold-bright)" />
+      <polygon points="-28,-225 -60,-190 -20,-165" fill="url(#hex-obs-dark)" />
+      <polygon points="28,-225 60,-190 20,-165" fill="url(#hex-obs-mid)" />
+
+      <polygon points="-48,-175 0,-185 0,-135 -45,-125" fill="url(#hex-obs-dark)" />
+      <polygon points="48,-175 0,-185 0,-135 45,-125" fill="url(#hex-obs-mid)" />
+
+      <!-- Sharp Golden Conical Beak -->
+      <polygon points="0,-145 -22,-100 0,-65" fill="url(#hex-gold-shadow)" />
+      <polygon points="0,-145 22,-100 0,-65" fill="url(#hex-gold-bright)" />
+      <polygon points="0,-65 -12,-95 0,-110 12,-95" fill="#fef08a" />
+
+      <!-- Dual Electric Cyan SLA Monitors -->
+      <polygon points="-36,-140 -16,-130 -20,-118 -40,-126" fill="#080c14" />
+      <polygon points="-33,-137 -19,-129 -22,-120 -36,-127" fill="#00f5ff" />
+      <circle cx="-27" cy="-128" r="3" fill="#ffffff" />
+
+      <polygon points="36,-140 16,-130 20,-118 40,-126" fill="#080c14" />
+      <polygon points="33,-137 19,-129 22,-120 36,-127" fill="#00f5ff" />
+      <circle cx="27" cy="-128" r="3" fill="#ffffff" />
+
+      <!-- Central Proxy Supervisor Core -->
+      <circle cx="0" cy="22" r="16" fill="#080c14" />
+      <circle cx="0" cy="22" r="11" fill="url(#hex-cyan-bright)" />
+      <circle cx="0" cy="22" r="5" fill="#ffffff" />
+
+    </g>
+  </g>
+</svg>
