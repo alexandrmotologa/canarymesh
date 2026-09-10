@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CanaryMesh — Control Plane Operations Console</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: rgba(17, 24, 39, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text: #f3f4f6;
+      --text-dim: #9ca3af;
+      --accent-blue: #3b82f6;
+      --accent-yellow: #f59e0b;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --accent-purple: #8b5cf6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); min-height: 100vh; padding: 24px; }
+    .container { max-width: 1300px; margin: 0 auto; }
+    
+    /* Header */
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--card-border); }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .logo-badge { background: linear-gradient(135deg, var(--accent-yellow), var(--accent-blue)); color: #000; font-weight: 900; font-size: 18px; padding: 6px 12px; border-radius: 8px; }
+    .brand h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+    .status-badges { display: flex; gap: 12px; align-items: center; }
+    .badge { padding: 6px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+    .badge-healthy { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-tripped { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); animation: pulse 2s infinite; }
+    .badge-live { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dot-green { background: #10b981; box-shadow: 0 0 8px #10b981; }
+    .dot-red { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+
+    /* Grid layout */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 24px; }
+    
+    /* Card */
+    .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 20px; backdrop-filter: blur(12px); }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .card-title { font-size: 15px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+    .upstream-stable { border-top: 3px solid var(--accent-blue); }
+    .upstream-canary { border-top: 3px solid var(--accent-yellow); }
+    
+    /* Metrics display */
+    .big-stat { font-size: 32px; font-weight: 800; margin-bottom: 4px; }
+    .stat-label { font-size: 13px; color: var(--text-dim); }
+    .metric-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 14px; }
+    .metric-row:last-child { border-bottom: none; }
+    .val-green { color: var(--accent-green); font-weight: 600; }
+    .val-yellow { color: var(--accent-yellow); font-weight: 600; }
+    .val-red { color: var(--accent-red); font-weight: 600; }
+
+    /* Controls Deck */
+    .control-deck { display: flex; flex-direction: column; gap: 16px; }
+    .slider-box { display: flex; flex-direction: column; gap: 8px; }
+    .slider-header { display: flex; justify-content: space-between; font-size: 14px; }
+    input[type=range] { width: 100%; accent-color: var(--accent-yellow); height: 6px; border-radius: 3px; cursor: pointer; }
+    .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
+    button { padding: 10px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; }
+    .btn-primary { background: var(--accent-blue); color: #fff; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-danger { background: var(--accent-red); color: #fff; box-shadow: 0 0 12px rgba(239, 68, 68, 0.4); }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-success { background: var(--accent-green); color: #000; }
+    .btn-success:hover { background: #059669; }
+    .btn-secondary { background: rgba(255,255,255,0.1); color: var(--text); }
+    .btn-secondary:hover { background: rgba(255,255,255,0.18); }
+    
+    /* Live Chart */
+    .canvas-container { position: relative; width: 100%; height: 220px; }
+    canvas { width: 100%; height: 100%; }
+
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+    th { color: var(--text-dim); padding: 8px 12px; border-bottom: 1px solid var(--card-border); font-weight: 600; }
+    td { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+    
+    /* Input */
+    input[type=text] { background: rgba(255,255,255,0.06); border: 1px solid var(--card-border); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 13px; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="logo-badge">CM</div>
+        <div>
+          <h1>CanaryMesh Console</h1>
+          <p style="font-size: 12px; color: var(--text-dim);">Edge Traffic Splitting &amp; Rollback Supervisor</p>
+        </div>
+      </div>
+      <div class="status-badges">
+        <span class="badge badge-live"><span class="dot dot-green"></span> SSE Connected</span>
+        <span id="guardBadge" class="badge badge-healthy"><span class="dot dot-green"></span> Guard Healthy</span>
+      </div>
+    </header>
+
+    <!-- Upstream Comparison Grid -->
+    <div class="grid-2">
+      <!-- Stable v1 -->
+      <div class="card upstream-stable">
+        <div class="card-header">
+          <span class="card-title">Stable Service (v1)</span>
+          <span id="stableWeightBadge" style="color: var(--accent-blue); font-weight: 700; font-size: 16px;">100.0%</span>
+        </div>
+        <div style="display: flex; gap: 24px; margin-bottom: 16px;">
+          <div>
+            <div id="stableRps" class="big-stat">0.0</div>
+            <div class="stat-label">Throughput (Req/s)</div>
+          </div>
+          <div>
+            <div id="stableP99" class="big-stat">0.0 ms</div>
+            <div class="stat-label">p99 Latency</div>
+          </div>
+        </div>
+        <div class="metric-row"><span>Target URL</span><span id="stableUrl" style="color: var(--text-dim);">-</span></div>
+        <div class="metric-row"><span>Health Prober</span><span id="stableHealth">Active (200 OK)</span></div>
+        <div class="metric-row"><span>Status 2xx / 5xx</span><span><span id="stable2xx" class="val-green">0</span> / <span id="stable5xx" class="val-red">0</span></span></div>
+        <div class="metric-row"><span>p50 / p90</span><span id="stableP50P90">0.0 ms / 0.0 ms</span></div>
+      </div>
+
+      <!-- Canary v2 -->
+      <div class="card upstream-canary">
+        <div class="card-header">
+          <span class="card-title">Canary Service (v2)</span>
+          <span id="canaryWeightBadge" style="color: var(--accent-yellow); font-weight: 700; font-size: 16px;">0.0%</span>
+        </div>
+        <div style="display: flex; gap: 24px; margin-bottom: 16px;">
+          <div>
+            <div id="canaryRps" class="big-stat">0.0</div>
+            <div class="stat-label">Throughput (Req/s)</div>
+          </div>
+          <div>
+            <div id="canaryP99" class="big-stat">0.0 ms</div>
+            <div class="stat-label">p99 Latency</div>
+          </div>
+          <div>
+            <div id="canaryErrRate" class="big-stat">0.0%</div>
+            <div class="stat-label">5xx Error Rate</div>
+          </div>
+        </div>
+        <div class="metric-row"><span>Target URL</span><span id="canaryUrl" style="color: var(--text-dim);">-</span></div>
+        <div class="metric-row"><span>Health Prober</span><span id="canaryHealth">Active (200 OK)</span></div>
+        <div class="metric-row"><span>Status 2xx / 5xx</span><span><span id="canary2xx" class="val-green">0</span> / <span id="canary5xx" class="val-red">0</span></span></div>
+        <div class="metric-row"><span>p50 / p90</span><span id="canaryP50P90">0.0 ms / 0.0 ms</span></div>
+      </div>
+    </div>
+
+    <!-- Telemetry Graph & Controls Deck -->
+    <div class="grid-2">
+      <!-- Live Canvas Chart -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Real-Time Telemetry Timeline</span>
+          <span style="font-size: 12px; color: var(--text-dim);">Updated every 1s</span>
+        </div>
+        <div class="canvas-container">
+          <canvas id="telemetryChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Control Deck -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Traffic Split &amp; Emergency Actions</span>
+        </div>
+        <div class="control-deck">
+          <div class="slider-box">
+            <div class="slider-header">
+              <span>Canary Traffic Weight: <strong id="sliderWeightLabel">0%</strong></span>
+              <span style="color: var(--text-dim);">Stable: <strong id="sliderStableLabel">100%</strong></span>
+            </div>
+            <input type="range" id="weightSlider" min="0" max="100" value="0" oninput="updateSliderLabel(this.value)">
+            <button class="btn-primary" style="margin-top: 6px;" onclick="applyWeight()">Apply Traffic Weight</button>
+          </div>
+
+          <div style="border-top: 1px solid var(--card-border); padding-top: 14px;">
+            <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 8px;">Supervisor Operations</div>
+            <div class="btn-group">
+              <button class="btn-danger" onclick="triggerAbort()">🚨 Emergency Abort (0%)</button>
+              <button class="btn-success" onclick="triggerPromote()">Promote Canary (100%)</button>
+              <button class="btn-secondary" onclick="resetGuard()">Reset Guard</button>
+              <button id="shadowToggleBtn" class="btn-secondary" onclick="toggleShadow()">Shadow Mode: OFF</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progressive Rollout & Routing Rules Grid -->
+    <div class="grid-2">
+      <!-- Rollout Monitor -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Progressive Rollout Monitor</span>
+          <span id="rolloutStateBadge" class="badge" style="background: rgba(255,255,255,0.1);">IDLE</span>
+        </div>
+        <div style="margin-bottom: 12px;">
+          <div style="font-size: 14px; margin-bottom: 4px;">Active Scenario: <strong id="scenarioName">None</strong></div>
+          <div id="stepInfo" style="font-size: 13px; color: var(--text-dim);">Manual traffic control active.</div>
+        </div>
+        <div class="btn-group">
+          <button class="btn-secondary" onclick="pauseRollout()">Pause</button>
+          <button class="btn-secondary" onclick="resumeRollout()">Resume</button>
+        </div>
+      </div>
+
+      <!-- Dynamic Path Rules -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Dynamic Path Prefix Rules</span>
+        </div>
+        <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+          <input type="text" id="newPathInput" placeholder="/api/v2/ or /checkout" style="flex: 1;">
+          <button class="btn-primary" onclick="addPathRule()">Add Canary Route</button>
+        </div>
+        <div style="max-height: 140px; overflow-y: auto;">
+          <table id="rulesTable">
+            <thead><tr><th>Prefix</th><th>Target</th><th>Action</th></tr></thead>
+            <tbody><tr><td colspan="3" style="color: var(--text-dim);">No custom path rules registered.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Incidents Log -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Incident Audit &amp; Post-Mortem Log</span>
+      </div>
+      <table id="incidentsTable">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Breach Reason</th>
+            <th>Prev Weight</th>
+            <th>5xx Errors</th>
+            <th>p99 Latency</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="5" style="color: var(--text-dim); text-align: center;">No automated rollback incidents recorded.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    let shadowEnabled = false;
+    const historyPoints = [];
+    const maxPoints = 30;
+
+    function updateSliderLabel(val) {
+      document.getElementById('sliderWeightLabel').innerText = val + '%';
+      document.getElementById('sliderStableLabel').innerText = (100 - val) + '%';
+    }
+
+    async function applyWeight() {
+      const weight = parseFloat(document.getElementById('weightSlider').value);
+      await fetch('/api/v1/canary/weight', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weight })
+      });
+    }
+
+    async function triggerAbort() {
+      await fetch('/api/v1/canary/abort', { method: 'POST' });
+    }
+
+    async function triggerPromote() {
+      await fetch('/api/v1/canary/promote', { method: 'POST' });
+    }
+
+    async function resetGuard() {
+      await fetch('/api/v1/canary/guard/reset', { method: 'POST' });
+    }
+
+    async function toggleShadow() {
+      shadowEnabled = !shadowEnabled;
+      await fetch('/api/v1/canary/shadow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: shadowEnabled, percentage: 100 })
+      });
+      document.getElementById('shadowToggleBtn').innerText = 'Shadow Mode: ' + (shadowEnabled ? 'ON' : 'OFF');
+    }
+
+    async function pauseRollout() {
+      await fetch('/api/v1/canary/rollout/pause', { method: 'POST' });
+    }
+
+    async function resumeRollout() {
+      await fetch('/api/v1/canary/rollout/resume', { method: 'POST' });
+    }
+
+    async function addPathRule() {
+      const path = document.getElementById('newPathInput').value.trim();
+      if (!path) return;
+      await fetch('/api/v1/canary/rules/path', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path_prefix: path, target: 'canary' })
+      });
+      document.getElementById('newPathInput').value = '';
+      loadRules();
+    }
+
+    async function deletePathRule(ruleId) {
+      await fetch('/api/v1/canary/rules/path/' + ruleId, { method: 'DELETE' });
+      loadRules();
+    }
+
+    async function loadRules() {
+      const resp = await fetch('/api/v1/canary/rules');
+      const data = await resp.json();
+      const tbody = document.querySelector('#rulesTable tbody');
+      if (!data.path_rules || data.path_rules.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="color: var(--text-dim);">No custom path rules registered.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = data.path_rules.map(r => `
+        <tr>
+          <td><code>${r.path_prefix}</code></td>
+          <td><span style="color: var(--accent-yellow);">${r.target}</span></td>
+          <td><button style="padding: 4px 8px; font-size: 11px; background: rgba(239,68,68,0.2); color: #f87171;" onclick="deletePathRule('${r.id}')">Delete</button></td>
+        </tr>
+      `).join('');
+    }
+
+    // Canvas Chart
+    function drawChart() {
+      const canvas = document.getElementById('telemetryChart');
+      const ctx = canvas.getContext('2d');
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * window.devicePixelRatio;
+      canvas.height = rect.height * window.devicePixelRatio;
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+      const w = rect.width;
+      const h = rect.height;
+      ctx.clearRect(0, 0, w, h);
+
+      if (historyPoints.length < 2) return;
+
+      // Draw Grid
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.lineWidth = 1;
+      for (let y = 0; y <= h; y += h / 4) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+
+      // Max scale latency
+      const maxLatency = Math.max(100, ...historyPoints.map(p => Math.max(p.stableP99, p.canaryP99)));
+
+      function plotLine(key, color) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        const stepX = w / (maxPoints - 1);
+        const offset = maxPoints - historyPoints.length;
+
+        historyPoints.forEach((p, idx) => {
+          const x = (offset + idx) * stepX;
+          const val = p[key];
+          const y = h - (val / maxLatency) * (h - 20) - 10;
+          if (idx === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+      }
+
+      plotLine('stableP99', '#3b82f6');
+      plotLine('canaryP99', '#f59e0b');
+    }
+
+    // Connect SSE stream
+    const eventSource = new EventSource('/api/v1/canary/live');
+    eventSource.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      const canaryWeight = data.canary_weight;
+      const stableWeight = 100.0 - canaryWeight;
+
+      document.getElementById('canaryWeightBadge').innerText = canaryWeight.toFixed(1) + '%';
+      document.getElementById('stableWeightBadge').innerText = stableWeight.toFixed(1) + '%';
+      document.getElementById('weightSlider').value = canaryWeight;
+      updateSliderLabel(canaryWeight);
+
+      // Telemetry
+      const stable = data.telemetry.stable || {};
+      const canary = data.telemetry.canary || {};
+
+      document.getElementById('stableRps').innerText = (stable.rps || 0).toFixed(1);
+      document.getElementById('stableP99').innerText = (stable.p99_ms || 0).toFixed(1) + ' ms';
+      document.getElementById('stable2xx').innerText = stable.status_2xx || 0;
+      document.getElementById('stable5xx').innerText = stable.status_5xx || 0;
+      document.getElementById('stableP50P90').innerText = `${(stable.p50_ms || 0).toFixed(1)}ms / ${(stable.p90_ms || 0).toFixed(1)}ms`;
+
+      document.getElementById('canaryRps').innerText = (canary.rps || 0).toFixed(1);
+      document.getElementById('canaryP99').innerText = (canary.p99_ms || 0).toFixed(1) + ' ms';
+      document.getElementById('canaryErrRate').innerText = (canary.error_rate_percent || 0).toFixed(1) + '%';
+      document.getElementById('canary2xx').innerText = canary.status_2xx || 0;
+      document.getElementById('canary5xx').innerText = canary.status_5xx || 0;
+      document.getElementById('canaryP50P90').innerText = `${(canary.p50_ms || 0).toFixed(1)}ms / ${(canary.p90_ms || 0).toFixed(1)}ms`;
+
+      // Guard
+      const guard = data.guard || {};
+      const guardBadge = document.getElementById('guardBadge');
+      if (guard.state === 'TRIPPED') {
+        guardBadge.className = 'badge badge-tripped';
+        guardBadge.innerHTML = '<span class="dot dot-red"></span> TRIPPED: ' + (guard.last_trip_reason || 'Breach');
+      } else {
+        guardBadge.className = 'badge badge-healthy';
+        guardBadge.innerHTML = '<span class="dot dot-green"></span> Guard Healthy';
+      }
+
+      // Rollout
+      const rollout = data.rollout || {};
+      document.getElementById('rolloutStateBadge').innerText = rollout.state || 'IDLE';
+      document.getElementById('scenarioName').innerText = rollout.scenario_name || 'None';
+      if (rollout.current_step) {
+        document.getElementById('stepInfo').innerText = `Step ${rollout.current_step.step_number}/${rollout.total_steps}: ${rollout.current_step.weight}% weight (${rollout.current_step.remaining_seconds}s remaining)`;
+      } else {
+        document.getElementById('stepInfo').innerText = 'Manual traffic control active.';
+      }
+
+      // Incidents table
+      if (guard.recent_trips && guard.recent_trips.length > 0) {
+        const tbody = document.querySelector('#incidentsTable tbody');
+        tbody.innerHTML = guard.recent_trips.map(t => `
+          <tr>
+            <td>${t.timestamp.split('T')[1].slice(0, 8)}</td>
+            <td style="color: var(--accent-red);">${t.reason}</td>
+            <td>${t.previous_weight}%</td>
+            <td>${t.total_requests}</td>
+            <td>${t.p99_ms} ms</td>
+          </tr>
+        `).join('');
+      }
+
+      // Push history
+      historyPoints.push({
+        stableP99: stable.p99_ms || 0,
+        canaryP99: canary.p99_ms || 0,
+        errRate: canary.error_rate_percent || 0
+      });
+      if (historyPoints.length > maxPoints) historyPoints.shift();
+      drawChart();
+    };
+
+    loadRules();
+  </script>
+</body>
+</html>

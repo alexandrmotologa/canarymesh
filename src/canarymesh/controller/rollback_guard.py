@@ -10,6 +10,7 @@ from typing import Any
 
 from canarymesh.config import SlaThresholds
 from canarymesh.controller.alert_dispatcher import AlertDispatcher
+from canarymesh.controller.health_prober import ActiveHealthProber
 from canarymesh.proxy.router import TrafficRouter
 from canarymesh.proxy.stats import TelemetryManager, WindowMetrics
 
@@ -42,12 +43,14 @@ class RollbackGuard:
         telemetry: TelemetryManager,
         sla: SlaThresholds,
         alert_dispatcher: AlertDispatcher | None = None,
+        health_prober: ActiveHealthProber | None = None,
         eval_interval_seconds: float = 1.0,
     ):
         self.router = router
         self.telemetry = telemetry
         self.sla = sla
         self.alert_dispatcher = alert_dispatcher or AlertDispatcher()
+        self.health_prober = health_prober
         self.eval_interval = eval_interval_seconds
 
         self.state: GuardState = GuardState.HEALTHY
@@ -100,23 +103,25 @@ class RollbackGuard:
 
         metrics: WindowMetrics = self.telemetry.canary.snapshot()
 
-        # Check sample size threshold to avoid false alarms on minimal traffic
-        if metrics.total_requests < self.sla.min_sample_size:
-            return None
-
         breaches: list[str] = []
 
-        # 1. Error rate check
-        if metrics.error_rate_percent > self.sla.max_error_rate_percent:
-            breaches.append(
-                f"Canary 5xx error rate ({metrics.error_rate_percent}%) exceeded threshold ({self.sla.max_error_rate_percent}%)"
-            )
+        # 0. Active health check probe check
+        if self.health_prober and not self.health_prober.is_canary_healthy():
+            breaches.append("Canary failed active background health probe (/healthz)")
 
-        # 2. p99 latency check
-        if metrics.p99_ms > self.sla.max_p99_latency_ms:
-            breaches.append(
-                f"Canary p99 latency ({metrics.p99_ms}ms) exceeded threshold ({self.sla.max_p99_latency_ms}ms)"
-            )
+        # Check sample size threshold for traffic metric checks
+        if metrics.total_requests >= self.sla.min_sample_size:
+            # 1. Error rate check
+            if metrics.error_rate_percent > self.sla.max_error_rate_percent:
+                breaches.append(
+                    f"Canary 5xx error rate ({metrics.error_rate_percent}%) exceeded threshold ({self.sla.max_error_rate_percent}%)"
+                )
+
+            # 2. p99 latency check
+            if metrics.p99_ms > self.sla.max_p99_latency_ms:
+                breaches.append(
+                    f"Canary p99 latency ({metrics.p99_ms}ms) exceeded threshold ({self.sla.max_p99_latency_ms}ms)"
+                )
 
         if breaches:
             reason = " | ".join(breaches)
@@ -175,4 +180,5 @@ class RollbackGuard:
                 "max_p99_latency_ms": self.sla.max_p99_latency_ms,
                 "min_sample_size": self.sla.min_sample_size,
             },
+            "health_prober": self.health_prober.get_status() if self.health_prober else None,
         }

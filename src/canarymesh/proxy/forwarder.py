@@ -1,5 +1,6 @@
 """Asynchronous streaming reverse proxy forwarder using HTTPX."""
 
+import asyncio
 import time
 from collections.abc import AsyncIterator
 
@@ -8,6 +9,7 @@ from fastapi import Request, Response
 from fastapi.responses import StreamingResponse
 
 from canarymesh.proxy.router import RouteDecision, TrafficRouter
+from canarymesh.proxy.shadow import ShadowEngine
 from canarymesh.proxy.stats import TelemetryManager
 
 # Standard hop-by-hop headers to strip before forwarding
@@ -32,9 +34,11 @@ class StreamingForwarder:
         router: TrafficRouter,
         telemetry: TelemetryManager,
         http_client: httpx.AsyncClient | None = None,
+        shadow_engine: ShadowEngine | None = None,
     ):
         self.router = router
         self.telemetry = telemetry
+        self.shadow_engine = shadow_engine
         self._client = http_client or httpx.AsyncClient(
             limits=httpx.Limits(
                 max_keepalive_connections=100,
@@ -46,6 +50,8 @@ class StreamingForwarder:
 
     async def close(self) -> None:
         """Close internal HTTP client resources."""
+        if self.shadow_engine:
+            await self.shadow_engine.close()
         await self._client.aclose()
 
     async def forward(self, request: Request) -> Response:
@@ -53,14 +59,14 @@ class StreamingForwarder:
         headers_dict = {k.lower(): v for k, v in request.headers.items()}
         cookies_dict = dict(request.cookies)
         query_dict = dict(request.query_params)
+        path = request.url.path
+        query = request.url.query
 
-        decision: RouteDecision = self.router.route(headers_dict, cookies_dict, query_dict)
+        decision: RouteDecision = self.router.route(headers_dict, cookies_dict, query_dict, path=path)
         target_upstream = decision.target
         upstream_name = decision.upstream_name
 
         # Construct target URL
-        path = request.url.path
-        query = request.url.query
         target_url = f"{target_upstream.url.rstrip('/')}{path}"
         if query:
             target_url += f"?{query}"
@@ -78,10 +84,27 @@ class StreamingForwarder:
         start_time = time.perf_counter()
 
         try:
-            # Stream request payload for methods with body
+            # Handle payload for methods with body
             req_content = None
+            body_bytes = None
             if request.method not in ("GET", "HEAD"):
-                req_content = request.stream()
+                if self.shadow_engine and self.shadow_engine.should_shadow() and upstream_name == "stable":
+                    body_bytes = await request.body()
+                    req_content = body_bytes
+                else:
+                    req_content = request.stream()
+
+            # Trigger background shadow mirroring if enabled
+            if upstream_name == "stable" and self.shadow_engine and self.shadow_engine.should_shadow():
+                asyncio.create_task(
+                    self.shadow_engine.mirror_request(
+                        method=request.method,
+                        path=path,
+                        query=query,
+                        headers=forward_headers,
+                        body_bytes=body_bytes,
+                    )
+                )
 
             upstream_response = await self._client.send(
                 self._client.build_request(

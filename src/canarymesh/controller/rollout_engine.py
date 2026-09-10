@@ -11,6 +11,7 @@ from typing import Any
 import yaml
 
 from canarymesh.config import SlaThresholds
+from canarymesh.controller.health_prober import ActiveHealthProber
 from canarymesh.controller.rollback_guard import GuardState, RollbackGuard
 from canarymesh.proxy.router import TrafficRouter
 
@@ -42,9 +43,15 @@ class RolloutScenario:
 class RolloutEngine:
     """Manages progression across configured canary rollout stages."""
 
-    def __init__(self, router: TrafficRouter, guard: RollbackGuard):
+    def __init__(
+        self,
+        router: TrafficRouter,
+        guard: RollbackGuard,
+        health_prober: ActiveHealthProber | None = None,
+    ):
         self.router = router
         self.guard = guard
+        self.health_prober = health_prober
         self.scenario: RolloutScenario | None = None
         self.state: RolloutState = RolloutState.IDLE
         self.current_step_index: int = 0
@@ -138,6 +145,11 @@ class RolloutEngine:
             while self.current_step_index < len(self.scenario.steps):
                 step = self.scenario.steps[self.current_step_index]
 
+                # Pre-flight check: verify canary is actively healthy before routing traffic
+                if self.health_prober and not self.health_prober.is_canary_healthy():
+                    await self.abort("Canary failed pre-flight active health check")
+                    return
+
                 # Apply current step weight
                 self.router.set_weight(step.weight)
                 logger.info(
@@ -155,11 +167,15 @@ class RolloutEngine:
                 while self.step_elapsed_seconds < step.duration_seconds:
                     await self._pause_event.wait()
 
-                    # Verify rollback guard health
+                    # Verify rollback guard health and prober status
                     if self.guard.state == GuardState.TRIPPED:
                         await self.abort(
                             f"RollbackGuard tripped: {self.guard.last_trip_reason}"
                         )
+                        return
+
+                    if self.health_prober and not self.health_prober.is_canary_healthy():
+                        await self.abort("Canary failed active health check during soak")
                         return
 
                     await asyncio.sleep(0.5)

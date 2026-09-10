@@ -2,19 +2,22 @@
 
 import asyncio
 import json
+from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter
-from fastapi.responses import PlainTextResponse, StreamingResponse
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import HTMLResponse, PlainTextResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from canarymesh.api.metrics import generate_prometheus_metrics
+from canarymesh.config import PathRoutingRule
+from canarymesh.controller.health_prober import ActiveHealthProber
+from canarymesh.controller.post_mortem import PostMortemEngine
 from canarymesh.controller.rollback_guard import RollbackGuard
 from canarymesh.controller.rollout_engine import RolloutEngine
 from canarymesh.proxy.router import TrafficRouter
+from canarymesh.proxy.shadow import ShadowEngine
 from canarymesh.proxy.stats import TelemetryManager
-
-router = APIRouter(prefix="/api/v1/canary")
 
 
 class WeightUpdateRequest(BaseModel):
@@ -25,14 +28,36 @@ class ScenarioLoadRequest(BaseModel):
     scenario_path: str = Field(..., description="Path to YAML scenario file")
 
 
+class ShadowUpdateRequest(BaseModel):
+    enabled: bool = Field(..., description="Toggle traffic shadowing to Canary")
+    percentage: float = Field(default=100.0, ge=0.0, le=100.0, description="Mirror traffic percentage")
+
+
+class PathRuleCreateRequest(BaseModel):
+    path_prefix: str = Field(..., description="URL path prefix e.g. /api/v2/")
+    target: str = Field(default="canary", description="Upstream target: canary or stable")
+
+
 def create_api_router(
     traffic_router: TrafficRouter,
     telemetry: TelemetryManager,
     guard: RollbackGuard,
     rollout: RolloutEngine,
+    health_prober: ActiveHealthProber | None = None,
+    shadow_engine: ShadowEngine | None = None,
+    post_mortem: PostMortemEngine | None = None,
 ) -> APIRouter:
     """Create and bind REST API router to operational components."""
     root_router = APIRouter()
+    router = APIRouter(prefix="/api/v1/canary")
+    static_dir = Path(__file__).parent / "static"
+    index_html_path = static_dir / "index.html"
+
+    index_content = (
+        index_html_path.read_text(encoding="utf-8")
+        if index_html_path.exists()
+        else "<h1>CanaryMesh UI not found</h1>"
+    )
 
     @root_router.get("/healthz")
     async def health_check() -> dict[str, str]:
@@ -41,6 +66,11 @@ def create_api_router(
     @root_router.get("/metrics", response_class=PlainTextResponse)
     async def metrics_endpoint() -> str:
         return generate_prometheus_metrics(traffic_router, telemetry, guard)
+
+    @root_router.get("/ui", response_class=HTMLResponse)
+    async def web_ui() -> HTMLResponse:
+        """Serve embedded single-page operations dashboard."""
+        return HTMLResponse(content=index_content)
 
     @router.get("/status")
     async def get_status() -> dict[str, Any]:
@@ -52,6 +82,8 @@ def create_api_router(
             "guard": guard.get_status(),
             "rollout": rollout.get_status(),
             "telemetry": telemetry.get_snapshot(),
+            "shadow": shadow_engine.get_status() if shadow_engine else None,
+            "health": health_prober.get_status() if health_prober else None,
         }
 
     @router.post("/weight")
@@ -86,6 +118,48 @@ def create_api_router(
     async def reset_guard() -> dict[str, Any]:
         guard.reset()
         return {"status": "guard_reset_healthy"}
+
+    @router.post("/shadow")
+    async def update_shadow(payload: ShadowUpdateRequest) -> dict[str, Any]:
+        if not shadow_engine:
+            raise HTTPException(status_code=400, detail="Shadow engine is not configured")
+        shadow_engine.update_config(payload.enabled, payload.percentage)
+        return shadow_engine.get_status()
+
+    @router.get("/shadow")
+    async def get_shadow() -> dict[str, Any]:
+        if not shadow_engine:
+            return {"enabled": False, "configured": False}
+        return shadow_engine.get_status()
+
+    @router.get("/rules")
+    async def get_rules() -> dict[str, Any]:
+        return traffic_router.get_rules()
+
+    @router.post("/rules/path")
+    async def add_path_rule(payload: PathRuleCreateRequest) -> dict[str, Any]:
+        rule = PathRoutingRule(path_prefix=payload.path_prefix, target=payload.target)
+        rule_id = traffic_router.add_path_rule(rule)
+        return {"status": "rule_added", "id": rule_id, "rule": rule.model_dump()}
+
+    @router.delete("/rules/path/{rule_id}")
+    async def delete_path_rule(rule_id: str) -> dict[str, Any]:
+        removed = traffic_router.remove_path_rule(rule_id)
+        if not removed:
+            raise HTTPException(status_code=404, detail="Path rule not found")
+        return {"status": "rule_deleted", "id": rule_id}
+
+    @router.get("/incidents")
+    async def get_incidents() -> dict[str, Any]:
+        if post_mortem:
+            return {"incidents": post_mortem.get_incidents()}
+        return {"incidents": []}
+
+    @router.get("/health")
+    async def get_upstream_health() -> dict[str, Any]:
+        if health_prober:
+            return health_prober.get_status()
+        return {"configured": False}
 
     @router.post("/rollout/start")
     async def start_rollout(payload: ScenarioLoadRequest | None = None) -> dict[str, Any]:

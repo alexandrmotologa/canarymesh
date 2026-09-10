@@ -21,11 +21,24 @@ class SlaThresholds(BaseModel):
     cooldown_seconds: int = Field(default=30, ge=5)
 
 
+import uuid
+
+
 class HeaderRoutingRule(BaseModel):
     """Header-based routing rule."""
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex[:8])
     header_name: str
     header_pattern: str
     target: str = "canary"
+    enabled: bool = True
+
+
+class PathRoutingRule(BaseModel):
+    """URL path prefix routing rule."""
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex[:8])
+    path_prefix: str
+    target: str = "canary"
+    enabled: bool = True
 
 
 class CanaryMeshConfig(BaseSettings):
@@ -45,6 +58,7 @@ class CanaryMeshConfig(BaseSettings):
     sticky_cookie_ttl_seconds: int = 86400
 
     header_rules: list[HeaderRoutingRule] = Field(default_factory=list)
+    path_rules: list[PathRoutingRule] = Field(default_factory=list)
     sla: SlaThresholds = Field(default_factory=SlaThresholds)
     alert_webhooks: list[str] = Field(default_factory=list)
 

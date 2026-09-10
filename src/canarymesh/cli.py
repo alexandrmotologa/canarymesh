@@ -12,11 +12,14 @@ from rich.table import Table
 from canarymesh.api.app import create_control_app
 from canarymesh.config import CanaryMeshConfig, SlaThresholds, UpstreamConfig
 from canarymesh.controller.alert_dispatcher import AlertDispatcher
+from canarymesh.controller.health_prober import ActiveHealthProber
+from canarymesh.controller.post_mortem import PostMortemEngine
 from canarymesh.controller.rollback_guard import RollbackGuard
 from canarymesh.controller.rollout_engine import RolloutEngine
 from canarymesh.proxy.app import create_proxy_app
 from canarymesh.proxy.forwarder import StreamingForwarder
 from canarymesh.proxy.router import TrafficRouter
+from canarymesh.proxy.shadow import ShadowEngine
 from canarymesh.proxy.stats import TelemetryManager
 from canarymesh.simulator.mock_services import run_mock_servers
 from canarymesh.simulator.traffic_generator import run_traffic_simulation
@@ -41,6 +44,8 @@ def start(
     control_host: str = typer.Option("0.0.0.0", "--control-host", help="Control plane REST API host"),
     scenario: str | None = typer.Option(None, "--scenario", help="Path to progressive rollout YAML scenario"),
     dashboard: bool = typer.Option(False, "--dashboard", "-d", help="Run interactive split-screen TUI"),
+    shadow: bool = typer.Option(False, "--shadow", help="Enable dark launch traffic shadowing to Canary"),
+    shadow_percent: float = typer.Option(100.0, "--shadow-percent", help="Shadow traffic percentage"),
     max_error_rate: float = typer.Option(1.0, "--max-error-rate", help="Rollback threshold 5xx error rate %"),
     max_p99_ms: float = typer.Option(350.0, "--max-p99-ms", help="Rollback threshold p99 latency ms"),
     min_samples: int = typer.Option(10, "--min-samples", help="Min samples before evaluating rollback"),
@@ -58,6 +63,8 @@ def start(
             control_host=control_host,
             scenario=scenario,
             dashboard=dashboard,
+            shadow=shadow,
+            shadow_percent=shadow_percent,
             max_error_rate=max_error_rate,
             max_p99_ms=max_p99_ms,
             min_samples=min_samples,
@@ -76,6 +83,8 @@ async def _start_runtime(
     control_host: str,
     scenario: str | None,
     dashboard: bool,
+    shadow: bool,
+    shadow_percent: float,
     max_error_rate: float,
     max_p99_ms: float,
     min_samples: int,
@@ -103,23 +112,40 @@ async def _start_runtime(
     # Core components
     router = TrafficRouter(cfg)
     telemetry = TelemetryManager(window_size_seconds=cfg.window_size_seconds)
-    forwarder = StreamingForwarder(router, telemetry)
-    alert_dispatcher = AlertDispatcher(webhook_urls=cfg.alert_webhooks)
+    post_mortem = PostMortemEngine()
+    alert_dispatcher = AlertDispatcher(webhook_urls=cfg.alert_webhooks, post_mortem_engine=post_mortem)
+    health_prober = ActiveHealthProber(cfg.stable, cfg.canary)
+    shadow_engine = ShadowEngine(
+        canary_target=cfg.canary,
+        telemetry=telemetry,
+        enabled=shadow,
+        shadow_percentage=shadow_percent,
+    )
+    forwarder = StreamingForwarder(router, telemetry, shadow_engine=shadow_engine)
     guard = RollbackGuard(
         router=router,
         telemetry=telemetry,
         sla=cfg.sla,
         alert_dispatcher=alert_dispatcher,
+        health_prober=health_prober,
         eval_interval_seconds=cfg.eval_interval_seconds,
     )
-    rollout = RolloutEngine(router=router, guard=guard)
+    rollout = RolloutEngine(router=router, guard=guard, health_prober=health_prober)
 
     if scenario:
         rollout.load_scenario(scenario)
 
     # Instantiate FastAPI apps
     proxy_app = create_proxy_app(forwarder)
-    control_app = create_control_app(router, telemetry, guard, rollout)
+    control_app = create_control_app(
+        traffic_router=router,
+        telemetry=telemetry,
+        guard=guard,
+        rollout=rollout,
+        health_prober=health_prober,
+        shadow_engine=shadow_engine,
+        post_mortem=post_mortem,
+    )
 
     proxy_server = uvicorn.Server(
         uvicorn.Config(proxy_app, host=proxy_host, port=proxy_port, log_level="warning")
@@ -131,6 +157,7 @@ async def _start_runtime(
     stop_event = asyncio.Event()
 
     # Start background tasks
+    await health_prober.start()
     await guard.start()
     if scenario:
         await rollout.start()
@@ -156,6 +183,7 @@ async def _start_runtime(
             f"Routing: [bold blue]Stable ({100.0 - weight:.1f}%)[/bold blue] -> {stable} | "
             f"[bold yellow]Canary ({weight:.1f}%)[/bold yellow] -> {canary}"
         )
+        console.print(f"Web Console: [bold cyan]http://{control_host}:{control_port}/ui[/bold cyan]")
 
     try:
         if dashboard:
@@ -172,6 +200,7 @@ async def _start_runtime(
         pass
     finally:
         stop_event.set()
+        await health_prober.stop()
         await guard.stop()
         proxy_server.should_exit = True
         control_server.should_exit = True

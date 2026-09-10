@@ -49,6 +49,10 @@ coverage.xml
 *.swp
 *.swo
 
+# Post-mortem incident reports generated locally
+incidents/*.md
+!incidents/.gitkeep
+
 # OS files
 .DS_Store
 Thumbs.db
