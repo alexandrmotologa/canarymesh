@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <clipPath id="squircle-clip-s">
+      <rect x="24" y="24" width="976" height="976" rx="220" />
+    </clipPath>
+
+    <!-- Obsidian & Slate Armor -->
+    <linearGradient id="s-obs-dark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#080c14"/>
+    </linearGradient>
+    <linearGradient id="s-obs-mid" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="s-obs-light" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#475569"/>
+      <stop offset="100%" stop-color="#334155"/>
+    </linearGradient>
+
+    <!-- Radiant Canary Gold -->
+    <linearGradient id="s-gold-bright" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="35%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <linearGradient id="s-gold-shadow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="65%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#9a3412"/>
+    </linearGradient>
+
+    <!-- Electric Cyan Telemetry -->
+    <linearGradient id="s-cyan-bright" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#00f5ff"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+    <linearGradient id="s-cyan-deep" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#082f49"/>
+    </linearGradient>
+
+    <filter id="s-shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#080c14" flood-opacity="0.14" />
+    </filter>
+  </defs>
+
+  <!-- Luxury White Squircle Container -->
+  <rect x="24" y="24" width="976" height="976" rx="220" fill="#ffffff" stroke="#e2e8f0" stroke-width="6" />
+
+  <g clip-path="url(#squircle-clip-s)">
+    <g transform="translate(512, 512)" filter="url(#s-shadow)">
+
+      <!-- Massive 40px Hexagonal Architectural Gateway Frame -->
+      <polygon points="
+        0,-390
+        338,-195
+        338,195
+        0,390
+        -338,195
+        -338,-195
+      " fill="none" stroke="#0f172a" stroke-width="40" stroke-linejoin="round" />
+
+      <!-- Inner Hexagon Dash Accent (Canary Gold) -->
+      <polygon points="
+        0,-355
+        307,-177
+        307,177
+        0,355
+        -307,177
+        -307,-177
+      " fill="none" stroke="#fbbf24" stroke-width="4" opacity="0.45" stroke-dasharray="16, 12" />
+
+      <!-- Background Traffic Trajectory Vectors -->
+      <g stroke="#cbd5e1" stroke-width="2.5" stroke-dasharray="6,8" opacity="0.6">
+        <line x1="-270" y1="-90" x2="0" y2="40" />
+        <line x1="270" y1="-90" x2="0" y2="40" />
+        <line x1="0" y1="40" x2="0" y2="310" />
+      </g>
+      <circle cx="-270" cy="-90" r="5" fill="#00f5ff" />
+      <circle cx="270" cy="-90" r="5" fill="#fbbf24" />
+
+      <!-- ================= 1. FANNED AVIAN TAIL FEATHERS ================= -->
+      <polygon points="0,130 -30,210 0,330 30,210" fill="url(#s-obs-dark)" />
+      <polygon points="-30,210 -80,270 -35,295 -10,230" fill="url(#s-gold-shadow)" />
+      <polygon points="30,210 80,270 35,295 10,230" fill="url(#s-cyan-bright)" />
+
+      <!-- ================= 2. OUTSPREAD FLIGHT WINGS (85% MASS) ================= -->
+      <!-- Left Wing - Stable Traffic Stream (Electric Cyan) -->
+      <polygon points="-45,-60 -290,-160 -230,-45 -60,-15" fill="url(#s-cyan-bright)" />
+      <polygon points="-60,-15 -230,-45 -265,55 -75,45" fill="url(#s-cyan-deep)" />
+      <polygon points="-75,45 -265,55 -210,145 -60,95" fill="url(#s-obs-dark)" />
+
+      <!-- Right Wing - Canary Release Stream (Canary Gold) -->
+      <polygon points="45,-60 290,-160 230,-45 60,-15" fill="url(#s-gold-bright)" />
+      <polygon points="60,-15 230,-45 265,55 75,45" fill="url(#s-gold-shadow)" />
+      <polygon points="75,45 265,55 210,145 60,95" fill="#b45309" />
+
+      <!-- ================= 3. AVIAN BODY & CHEST ================= -->
+      <polygon points="0,-70 -50,-70 -65,55 -35,145 0,125" fill="url(#s-obs-dark)" />
+      <polygon points="0,-70 50,-70 65,55 35,145 0,125" fill="url(#s-obs-mid)" />
+
+      <!-- Pure White Breast Keel -->
+      <polygon points="0,-55 -35,25 0,95 35,25" fill="#ffffff" />
+      <polygon points="0,-55 -35,25 0,95" fill="url(#s-obs-light)" />
+      <polygon points="0,-55 0,95 35,25" fill="#ffffff" />
+
+      <!-- Golden Throat Gorget -->
+      <polygon points="0,-115 -35,-70 0,-35 35,-70" fill="url(#s-gold-bright)" />
+      <polygon points="0,-115 -35,-70 0,-35" fill="url(#s-gold-shadow)" />
+
+      <!-- ================= 4. AVIAN CANARY HEAD WITH CREST ================= -->
+      <!-- Canary Crest Tuft (3 origami feathers) -->
+      <polygon points="0,-295 -24,-220 0,-180" fill="url(#s-gold-shadow)" />
+      <polygon points="0,-295 24,-220 0,-180" fill="url(#s-gold-bright)" />
+      <polygon points="-24,-220 -55,-190 -18,-160" fill="url(#s-obs-dark)" />
+      <polygon points="24,-220 55,-190 18,-160" fill="url(#s-gold-bright)" />
+
+      <!-- Rounded Songbird Crown -->
+      <polygon points="-42,-175 0,-185 0,-130 -40,-120" fill="url(#s-obs-dark)" />
+      <polygon points="42,-175 0,-185 0,-130 40,-120" fill="url(#s-obs-mid)" />
+
+      <!-- Sharp Conical Finch Beak (100% Bird Beak!) -->
+      <polygon points="0,-140 -20,-95 0,-55" fill="url(#s-gold-shadow)" />
+      <polygon points="0,-140 20,-95 0,-55" fill="url(#s-gold-bright)" />
+      <polygon points="0,-55 -10,-88 0,-102 10,-88" fill="#fef08a" />
+      <line x1="0" y1="-140" x2="0" y2="-55" stroke="#78350f" stroke-width="2.2" />
+
+      <!-- Alert Avian Eyes (Round songbird eyes with cyan telemetry iris) -->
+      <circle cx="-28" cy="-122" r="9.5" fill="#080c14" />
+      <circle cx="-28" cy="-122" r="6.5" fill="#00f5ff" />
+      <circle cx="-28" cy="-122" r="3.2" fill="#080c14" />
+      <circle cx="-26" cy="-124" r="1.5" fill="#ffffff" />
+
+      <circle cx="28" cy="-122" r="9.5" fill="#080c14" />
+      <circle cx="28" cy="-122" r="6.5" fill="#00f5ff" />
+      <circle cx="28" cy="-122" r="3.2" fill="#080c14" />
+      <circle cx="30" cy="-124" r="1.5" fill="#ffffff" />
+
+      <!-- Central Proxy Supervisor Core (Rollback Switch) -->
+      <circle cx="0" cy="25" r="16" fill="#080c14" />
+      <circle cx="0" cy="25" r="11" fill="url(#s-cyan-bright)" />
+      <circle cx="0" cy="25" r="5" fill="#ffffff" />
+
+    </g>
+  </g>
+</svg>

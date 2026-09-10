@@ -4,50 +4,50 @@
       <rect x="24" y="24" width="976" height="976" rx="220" />
     </clipPath>
 
-    <!-- Stealth Obsidian & Charcoal Base -->
-    <linearGradient id="canary-obsidian" x1="0%" y1="0%" x2="100%" y2="100%">
+    <!-- Stealth Obsidian & Slate Base -->
+    <linearGradient id="cw-obs-dark" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#1e293b"/>
       <stop offset="100%" stop-color="#080c14"/>
     </linearGradient>
-    <linearGradient id="canary-slate-dark" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="cw-obs-mid" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#334155"/>
       <stop offset="100%" stop-color="#1e293b"/>
     </linearGradient>
-    <linearGradient id="canary-slate-light" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="cw-obs-light" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#475569"/>
       <stop offset="100%" stop-color="#334155"/>
     </linearGradient>
 
-    <!-- Radiant Canary Gold / Amber (The Canary Deployment Stream) -->
-    <linearGradient id="canary-gold-bright" x1="0%" y1="0%" x2="100%" y2="100%">
+    <!-- Radiant Canary Yellow / Warm Amber (The Canary Deployment Stream) -->
+    <linearGradient id="cw-canary-high" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#fef08a"/>
       <stop offset="35%" stop-color="#fbbf24"/>
       <stop offset="100%" stop-color="#f59e0b"/>
     </linearGradient>
-    <linearGradient id="canary-gold-shadow" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="cw-canary-mid" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#fbbf24"/>
-      <stop offset="60%" stop-color="#d97706"/>
+      <stop offset="65%" stop-color="#d97706"/>
       <stop offset="100%" stop-color="#b45309"/>
     </linearGradient>
-    <linearGradient id="canary-amber-deep" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="cw-amber-deep" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#d97706"/>
-      <stop offset="100%" stop-color="#7c2d12"/>
+      <stop offset="100%" stop-color="#78350f"/>
     </linearGradient>
 
-    <!-- Electric Cyan Telemetry & Supervisor (Stable Mesh Stream) -->
-    <linearGradient id="canary-cyan-bright" x1="0%" y1="0%" x2="100%" y2="100%">
+    <!-- Electric Cyan Telemetry (Stable Mesh Stream & Supervisor) -->
+    <linearGradient id="cw-cyan-bright" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#38bdf8"/>
-      <stop offset="50%" stop-color="#00f5ff"/>
+      <stop offset="45%" stop-color="#00f5ff"/>
       <stop offset="100%" stop-color="#0284c7"/>
     </linearGradient>
-    <linearGradient id="canary-cyan-deep" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="cw-cyan-deep" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#0284c7"/>
       <stop offset="100%" stop-color="#082f49"/>
     </linearGradient>
 
     <!-- Volumetric Shadow -->
-    <filter id="shadow-profile" x="-15%" y="-15%" width="130%" height="130%">
-      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#080c14" flood-opacity="0.14" />
+    <filter id="cw-shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="20" stdDeviation="24" flood-color="#080c14" flood-opacity="0.15" />
     </filter>
   </defs>
 
@@ -55,68 +55,104 @@
   <rect x="24" y="24" width="976" height="976" rx="220" fill="#ffffff" stroke="#e2e8f0" stroke-width="6" />
 
   <g clip-path="url(#squircle-clip)">
-    <g transform="translate(512, 512) scale(1.08) translate(-512, -512)" filter="url(#shadow-profile)">
+    <g transform="translate(520, 508) scale(1.06) translate(-512, -512)" filter="url(#cw-shadow)">
 
-      <!-- Subtle Mesh Routing Vector in Background -->
-      <g stroke="#cbd5e1" stroke-width="3" stroke-dasharray="6,8" opacity="0.65">
-        <line x1="180" y1="650" x2="820" y2="330" />
+      <!-- TECHNICAL APPARATUS: ROLLING TELEMETRY RING & MESH AXIS -->
+      <!-- 60-Second Sliding Window Telemetry Arc (Dashed Cyan) -->
+      <circle cx="512" cy="480" r="330" fill="none" stroke="#e2e8f0" stroke-width="2.5" />
+      <path d="M 280,250 A 330,330 0 0,1 840,460" fill="none" stroke="#00f5ff" stroke-width="3" stroke-dasharray="12,12" opacity="0.55" />
+
+      <!-- THE EDGE NETWORK TELEMETRY WIRE (Horizontal Perch at y=675) -->
+      <g opacity="0.8">
+        <line x1="100" y1="675" x2="920" y2="675" stroke="#cbd5e1" stroke-width="3.5" stroke-dasharray="8,8" />
+        <line x1="380" y1="675" x2="650" y2="675" stroke="#00f5ff" stroke-width="3.5" opacity="0.9" />
+        <line x1="720" y1="240" x2="220" y2="740" stroke="#e2e8f0" stroke-width="2" stroke-dasharray="6,6" />
       </g>
-      <circle cx="180" cy="650" r="5.5" fill="#00f5ff" />
-      <circle cx="820" cy="330" r="5.5" fill="#fbbf24" />
+      <!-- Telemetry Nodes on Rail -->
+      <circle cx="200" cy="675" r="5.5" fill="#0284c7" />
+      <circle cx="455" cy="675" r="5" fill="#00f5ff" />
+      <circle cx="535" cy="675" r="5" fill="#00f5ff" />
+      <circle cx="820" cy="675" r="5.5" fill="#fbbf24" />
 
-      <!-- ================= 12 MASTERPIECE ORIGAMI FACETS ================= -->
+      <!-- ================= 1. TAIL FEATHERS (Downward Avian Rudder) ================= -->
+      <!-- Top Covert Feather (Canary Gold) -->
+      <polygon points="385,590 230,765 280,775 415,620" fill="url(#cw-canary-mid)" />
+      <!-- Central Tail Quill (Stealth Obsidian) -->
+      <polygon points="415,610 260,805 310,810 435,635" fill="url(#cw-obs-dark)" />
+      <!-- Lower Tail Feather (Electric Cyan Stream) -->
+      <polygon points="435,635 295,820 340,815 455,650" fill="url(#cw-cyan-deep)" />
 
-      <!-- 1. Upper Alert Crest Plume (The Canary's Defining Crown) -->
-      <polygon points="390,220 540,210 490,320 350,290" fill="url(#canary-gold-bright)" />
-      <polygon points="490,210 580,180 540,210" fill="#fef08a" />
+      <!-- ================= 2. CLAWS & PERCH GRIP ================= -->
+      <polygon points="460,630 440,675 470,675 480,630" fill="url(#cw-obs-mid)" />
+      <polygon points="520,630 505,675 535,675 540,630" fill="url(#cw-obs-dark)" />
+      <!-- Grip Knuckles (Cyan Status Glow) -->
+      <ellipse cx="455" cy="675" rx="7" ry="4" fill="#00f5ff" />
+      <ellipse cx="520" cy="675" rx="7" ry="4" fill="#00f5ff" />
 
-      <!-- 2. Forehead Diamond Facet (Radiant Amber Fold) -->
-      <polygon points="540,210 680,290 590,370 490,320" fill="url(#canary-gold-shadow)" />
+      <!-- ================= 3. LOWER BELLY & RUMP ================= -->
+      <polygon points="395,535 480,630 545,630 580,555 480,530" fill="url(#cw-obs-dark)" />
 
-      <!-- 3. Sharp Conical Canary Beak (Avian Seed-eater Beak in Glowing Gold) -->
-      <!-- Upper Mandible -->
-      <polygon points="680,290 820,350 740,390 640,360" fill="url(#canary-gold-bright)" />
-      <!-- Lower Mandible Undertomb -->
-      <polygon points="740,390 820,350 750,420 670,395" fill="url(#canary-amber-deep)" />
+      <!-- ================= 4. PROUD PLUMP CANARY BREAST ================= -->
+      <!-- Lower Breast -->
+      <polygon points="480,530 580,555 645,465 555,435" fill="url(#cw-canary-high)" />
+      <!-- Upper Breast (Graceful Avian Curve) -->
+      <polygon points="555,435 645,465 665,385 575,355" fill="url(#cw-canary-mid)" />
 
-      <!-- 4. Ocular Brow Shield (Deep Midnight Slate) -->
-      <polygon points="590,370 680,290 640,360 670,395 570,425" fill="url(#canary-obsidian)" />
+      <!-- Pure White Cheek & Throat Keel (High-Contrast Signature Facet) -->
+      <polygon points="515,315 575,355 665,385 625,335 555,295" fill="#ffffff" />
 
-      <!-- 5. Canary Telemetry Eye (SLA Sentinel / Latency-Anomaly Node) -->
-      <polygon points="605,355 648,368 628,394 588,381" fill="#ffffff" />
-      <polygon points="610,358 644,370 625,390 594,379" fill="#00f5ff" />
-      <circle cx="620" cy="375" r="4" fill="#080c14" />
-      <circle cx="622" cy="373" r="1.5" fill="#ffffff" />
+      <!-- ================= 5. NAPE & SPINE (SLENDER AVIAN NECK) ================= -->
+      <polygon points="435,250 480,230 475,270 420,340 385,310" fill="url(#cw-obs-dark)" />
+      <polygon points="420,340 475,270 515,315 450,400" fill="url(#cw-obs-mid)" />
 
-      <!-- 6. Cheek & Throat Keel (Pure Ice White Plane - High Contrast Signature) -->
-      <polygon points="490,320 590,370 570,425 510,510 410,430" fill="#ffffff" />
+      <!-- ================= 6. HEAD & ALERT CANARY CREST ================= -->
+      <!-- Signature Backward-Arching Crest Plumes -->
+      <polygon points="450,200 515,155 545,220 480,230" fill="url(#cw-canary-high)" />
+      <polygon points="515,155 565,195 545,220" fill="#fef08a" />
+      <polygon points="420,220 465,190 480,230 435,250" fill="url(#cw-canary-mid)" />
 
-      <!-- 7. Throat Forward Shield (Vivid Canary Amber - Seamlessly Connected Chin) -->
-      <polygon points="570,425 670,395 750,420 700,480 640,530 570,530 510,510" fill="url(#canary-gold-bright)" />
-      <polygon points="670,395 750,420 700,480" fill="url(#canary-gold-shadow)" />
+      <!-- Rounded Songbird Crown -->
+      <polygon points="480,230 545,220 600,260 555,295 475,270" fill="url(#cw-canary-high)" />
+      <polygon points="545,220 600,260 635,300 585,325 555,295" fill="url(#cw-canary-mid)" />
 
-      <!-- 8. Rear Nape Armor (Obsidian Slate Mid) -->
-      <polygon points="260,340 350,290 410,430 310,490" fill="url(#canary-slate-dark)" />
+      <!-- ================= 7. COMPACT CONICAL SEED BEAK (TRUE CANARY BEAK) ================= -->
+      <!-- Upper Mandible (Sharp Golden Finch Beak) -->
+      <polygon points="600,260 705,285 625,315 585,290" fill="url(#cw-canary-high)" />
+      <polygon points="600,260 705,285 645,280" fill="#fef08a" />
+      <!-- Lower Mandible (Warm Amber Depth) -->
+      <polygon points="625,315 705,285 640,325 595,315" fill="url(#cw-amber-deep)" />
+      <!-- Beak Mouthline (Rictus) -->
+      <line x1="590" y1="288" x2="695" y2="285" stroke="#78350f" stroke-width="2.2" stroke-linecap="round" />
 
-      <!-- 9. Primary Wing Blade - Canary Stream (Radiant Canary Gold Flight Vector) -->
-      <polygon points="410,430 510,510 570,530 640,530 580,630 460,620 400,570 310,490" fill="url(#canary-gold-shadow)" />
+      <!-- ================= 8. ALERT ROUND AVIAN EYE ================= -->
+      <!-- Songbird Eye with Electric Cyan Telemetry Retina & Sparkle -->
+      <ellipse cx="545" cy="265" rx="15" ry="15" fill="#080c14" />
+      <circle cx="545" cy="265" r="10.5" fill="url(#cw-cyan-bright)" />
+      <circle cx="545" cy="265" r="5" fill="#080c14" />
+      <circle cx="549" cy="262" r="2.2" fill="#ffffff" />
+      <!-- Eyelid Arch -->
+      <path d="M 530,262 Q 545,252 560,262" fill="none" stroke="#fef08a" stroke-width="2" />
 
-      <!-- 10. Secondary Wing Blade - Stable Traffic Stream (Electric Cyan Flow) -->
-      <polygon points="310,490 400,570 460,620 580,630 510,720 380,670 240,580" fill="url(#canary-cyan-bright)" />
+      <!-- ================= 9. FOLDED ORIGAMI WING BLADES ================= -->
+      <!-- Scapular Armor Plate (Stealth Obsidian) -->
+      <polygon points="450,400 555,360 540,460 420,460" fill="url(#cw-obs-dark)" />
 
-      <!-- 11. Trailing Wing Blade - Compensation / Rollback Guard (Midnight Navy) -->
-      <polygon points="240,580 380,670 510,720 440,800 310,750 190,650" fill="url(#canary-obsidian)" />
+      <!-- Wing Covert - Stable Traffic Stream (Electric Cyan Flow Blade) -->
+      <polygon points="420,460 540,460 520,535 380,520" fill="url(#cw-cyan-bright)" />
 
-      <!-- 12. Wing Apex Golden Quill (Canary Amber Accent) -->
-      <polygon points="510,720 580,630 610,700 530,780" fill="url(#canary-gold-bright)" />
+      <!-- Primary Flight Feather 1 (Canary Gold Blade - Progressive Rollout) -->
+      <polygon points="380,520 520,535 470,620 340,580" fill="url(#cw-canary-high)" />
 
-      <!-- Lower Body Spine & Covert Feather (Amber Accent) -->
-      <polygon points="190,650 310,750 270,830 190,750" fill="url(#canary-slate-dark)" />
+      <!-- Primary Flight Feather 2 (Canary Amber Blade) -->
+      <polygon points="340,580 470,620 420,675 310,630" fill="url(#cw-canary-mid)" />
 
-      <!-- Central Proxy Supervisor Core Jewel (Heart Keel Node) -->
-      <circle cx="490" cy="470" r="15" fill="#080c14" />
-      <circle cx="490" cy="470" r="10" fill="url(#canary-cyan-bright)" />
-      <circle cx="490" cy="470" r="4.5" fill="#ffffff" />
+      <!-- Primary Flight Feather 3 (Deep Obsidian Trailing Quill) -->
+      <polygon points="310,630 420,675 370,715 280,660" fill="url(#cw-obs-dark)" />
+
+      <!-- Central Proxy Supervisor Core Jewel (Heart Switch) -->
+      <circle cx="495" cy="435" r="14" fill="#080c14" />
+      <circle cx="495" cy="435" r="9" fill="url(#cw-cyan-bright)" />
+      <circle cx="495" cy="435" r="4" fill="#ffffff" />
 
     </g>
   </g>
