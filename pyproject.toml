@@ -1,0 +1,58 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "canarymesh"
+version = "0.1.0"
+description = "Dynamic traffic splitting and automated rollback edge reverse proxy"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [
+    { name = "Alexandru Motologa" }
+]
+keywords = ["canary", "reverse-proxy", "traffic-splitting", "rollback", "fastapi", "sre"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet :: Proxy Servers",
+    "Topic :: System :: Networking :: Monitoring",
+]
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "httpx>=0.27.0",
+    "typer>=0.12.0",
+    "rich>=13.8.0",
+    "pydantic>=2.8.0",
+    "pydantic-settings>=2.4.0",
+    "pyyaml>=6.0.2",
+    "prometheus-client>=0.20.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "ruff>=0.6.0",
+]
+
+[project.scripts]
+canarymesh = "canarymesh.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/canarymesh"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
