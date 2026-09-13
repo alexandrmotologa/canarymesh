@@ -56,3 +56,6 @@ incidents/*.md
 # OS files
 .DS_Store
 Thumbs.db
+
+# Master demo video recording
+*.mp4

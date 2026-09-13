@@ -19,6 +19,10 @@
 
 CanaryMesh splits incoming HTTP traffic between a stable upstream service (v1) and a canary service (v2) using dynamic weights, sticky sessions, request headers, or path prefixes. A background supervisor evaluates error rates and latency percentiles inside a rolling sliding window, cutting traffic to the canary service immediately if thresholds fail.
 
+<p align="center">
+  <img src="docs/images/canarymesh_demo.gif" alt="CanaryMesh Live Operations Demo" width="850" />
+</p>
+
 ## Live Operations Console
 
 CanaryMesh includes an embedded operations console served at `http://localhost:8090/ui`. It connects over Server-Sent Events to provide live telemetry updates, interactive weight adjustments, dark launching toggles, dynamic path prefix rule controls, and automated incident audit logs.
