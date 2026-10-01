@@ -105,7 +105,7 @@ async def test_automated_rollback_end_to_end(test_environment):
 
         # 5. Subsequent normal requests (without forced headers) route 100% to Stable
         for i in range(20):
-            resp = await client.get("/api/v1/orders", cookies={"canary_session": f"user-{i}"})
+            resp = await client.get("/api/v1/orders", headers={"Cookie": f"canary_session=user-{i}"})
             assert resp.status_code == 200
             assert resp.headers.get("x-canary-routed") == "stable"
 

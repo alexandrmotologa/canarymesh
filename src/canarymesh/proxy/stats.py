@@ -1,9 +1,12 @@
 """In-memory sliding-window telemetry engine tracking latency percentiles and status codes."""
 
 import math
+import random
 import time
 from dataclasses import dataclass, field
 from threading import Lock
+
+MAX_SLOT_LATENCY_SAMPLES = 200  # Cap per-second latency samples to prevent memory explosion
 
 
 @dataclass
@@ -15,10 +18,22 @@ class SecondSlot:
     status_4xx: int = 0
     status_5xx: int = 0
     latencies_ms: list[float] = field(default_factory=list)
+    sample_count: int = 0
 
     @property
     def total_requests(self) -> int:
         return self.status_2xx + self.status_3xx + self.status_4xx + self.status_5xx
+
+    def add_latency(self, latency_ms: float) -> None:
+        """Add latency sample using reservoir sampling if slot is congested."""
+        self.sample_count += 1
+        if len(self.latencies_ms) < MAX_SLOT_LATENCY_SAMPLES:
+            self.latencies_ms.append(latency_ms)
+        else:
+            # Algorithm R reservoir sampling
+            idx = random.randint(0, self.sample_count - 1)
+            if idx < MAX_SLOT_LATENCY_SAMPLES:
+                self.latencies_ms[idx] = latency_ms
 
 
 @dataclass
@@ -40,6 +55,20 @@ class WindowMetrics:
     p99_ms: float
     avg_ms: float
     max_ms: float
+
+
+@dataclass
+class ComparativeAnalysis:
+    """Comparative analysis between Canary and Stable baseline."""
+    stable_error_rate: float
+    canary_error_rate: float
+    error_diff_percent: float
+    stable_p99_ms: float
+    canary_p99_ms: float
+    latency_ratio: float
+    latency_delta_ms: float
+    relative_degradation_detected: bool
+    summary: str
 
 
 class SlidingWindow:
@@ -95,7 +124,7 @@ class SlidingWindow:
             elif 500 <= status_code < 600:
                 slot.status_5xx += 1
 
-            slot.latencies_ms.append(latency_ms)
+            slot.add_latency(latency_ms)
 
     def snapshot(self, current_time: float | None = None) -> WindowMetrics:
         """Calculate and return aggregated window metrics."""
@@ -197,6 +226,52 @@ class TelemetryManager:
             "stable": self.stable.snapshot(),
             "canary": self.canary.snapshot(),
         }
+
+    def analyze_comparative(
+        self,
+        max_latency_ratio: float = 2.0,
+        max_error_diff_percent: float = 3.0,
+    ) -> ComparativeAnalysis:
+        """Compute relative degradation comparison between Stable and Canary."""
+        stable_m = self.stable.snapshot()
+        canary_m = self.canary.snapshot()
+
+        err_diff = round(canary_m.error_rate_percent - stable_m.error_rate_percent, 2)
+        latency_delta = round(canary_m.p99_ms - stable_m.p99_ms, 2)
+
+        if stable_m.p99_ms > 0:
+            latency_ratio = round(canary_m.p99_ms / stable_m.p99_ms, 2)
+        else:
+            latency_ratio = 1.0 if canary_m.p99_ms == 0 else round(canary_m.p99_ms, 2)
+
+        degradation = False
+        summary_reasons = []
+
+        if canary_m.total_requests >= 5:
+            if err_diff > max_error_diff_percent:
+                degradation = True
+                summary_reasons.append(
+                    f"Error rate higher than Stable by {err_diff}% (threshold: {max_error_diff_percent}%)"
+                )
+            if stable_m.p99_ms > 10.0 and latency_ratio > max_latency_ratio:
+                degradation = True
+                summary_reasons.append(
+                    f"p99 latency is {latency_ratio}x slower than Stable (threshold: {max_latency_ratio}x)"
+                )
+
+        summary = " | ".join(summary_reasons) if summary_reasons else "Canary metrics are healthy relative to Stable baseline"
+
+        return ComparativeAnalysis(
+            stable_error_rate=stable_m.error_rate_percent,
+            canary_error_rate=canary_m.error_rate_percent,
+            error_diff_percent=err_diff,
+            stable_p99_ms=stable_m.p99_ms,
+            canary_p99_ms=canary_m.p99_ms,
+            latency_ratio=latency_ratio,
+            latency_delta_ms=latency_delta,
+            relative_degradation_detected=degradation,
+            summary=summary,
+        )
 
     def reset_canary(self) -> None:
         """Reset canary stats after an abort or version switch."""

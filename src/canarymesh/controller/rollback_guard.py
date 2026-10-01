@@ -19,6 +19,7 @@ logger = logging.getLogger("canarymesh.guard")
 
 class GuardState(str, Enum):
     HEALTHY = "HEALTHY"
+    PROBATION = "PROBATION"
     TRIPPED = "TRIPPED"
     DISABLED = "DISABLED"
 
@@ -58,6 +59,7 @@ class RollbackGuard:
         self._task: asyncio.Task | None = None
         self._running: bool = False
         self.last_eval_time: float | None = None
+        self.last_trip_time: float | None = None
         self.last_trip_reason: str | None = None
 
     @property
@@ -97,31 +99,48 @@ class RollbackGuard:
         self.last_eval_time = time.time()
         current_weight = self.router.canary_weight
 
+        # Check probation recovery timeout if enabled and tripped
+        if (
+            self.state == GuardState.TRIPPED
+            and self.sla.enable_probation
+            and self.last_trip_time
+            and (time.time() - self.last_trip_time > self.sla.cooldown_seconds)
+        ):
+            logger.info("RollbackGuard entering PROBATION mode after cooldown")
+            self.state = GuardState.PROBATION
+            self.router.set_weight(self.sla.probation_weight)
+
         # Only evaluate active canary traffic
         if current_weight <= 0.0 or self.state == GuardState.TRIPPED:
             return None
 
         metrics: WindowMetrics = self.telemetry.canary.snapshot()
-
         breaches: list[str] = []
 
         # 0. Active health check probe check
         if self.health_prober and not self.health_prober.is_canary_healthy():
             breaches.append("Canary failed active background health probe (/healthz)")
 
-        # Check sample size threshold for traffic metric checks
+        # 1. Absolute Metric Checks
         if metrics.total_requests >= self.sla.min_sample_size:
-            # 1. Error rate check
             if metrics.error_rate_percent > self.sla.max_error_rate_percent:
                 breaches.append(
                     f"Canary 5xx error rate ({metrics.error_rate_percent}%) exceeded threshold ({self.sla.max_error_rate_percent}%)"
                 )
 
-            # 2. p99 latency check
             if metrics.p99_ms > self.sla.max_p99_latency_ms:
                 breaches.append(
                     f"Canary p99 latency ({metrics.p99_ms}ms) exceeded threshold ({self.sla.max_p99_latency_ms}ms)"
                 )
+
+            # 2. Relative Comparative Degradation Checks (Canary vs Stable)
+            if self.sla.enable_relative_analysis:
+                comp = self.telemetry.analyze_comparative(
+                    max_latency_ratio=self.sla.max_relative_latency_ratio,
+                    max_error_diff_percent=self.sla.max_relative_error_diff_percent,
+                )
+                if comp.relative_degradation_detected:
+                    breaches.append(f"Relative Degradation vs Stable: {comp.summary}")
 
         if breaches:
             reason = " | ".join(breaches)
@@ -135,6 +154,7 @@ class RollbackGuard:
         self.router.set_weight(0.0)
         self.state = GuardState.TRIPPED
         self.last_trip_reason = reason
+        self.last_trip_time = time.time()
 
         if metrics is None:
             metrics = self.telemetry.canary.snapshot()
@@ -163,10 +183,16 @@ class RollbackGuard:
         """Reset guard state back to HEALTHY."""
         self.state = GuardState.HEALTHY
         self.last_trip_reason = None
+        self.last_trip_time = None
         logger.info("RollbackGuard reset to HEALTHY")
 
     def get_status(self) -> dict[str, Any]:
         """Return comprehensive status for monitoring and APIs."""
+        comp = self.telemetry.analyze_comparative(
+            max_latency_ratio=self.sla.max_relative_latency_ratio,
+            max_error_diff_percent=self.sla.max_relative_error_diff_percent,
+        )
+
         return {
             "state": self.state.value,
             "running": self._running,
@@ -179,6 +205,11 @@ class RollbackGuard:
                 "max_error_rate_percent": self.sla.max_error_rate_percent,
                 "max_p99_latency_ms": self.sla.max_p99_latency_ms,
                 "min_sample_size": self.sla.min_sample_size,
+                "enable_relative_analysis": self.sla.enable_relative_analysis,
+                "max_relative_latency_ratio": self.sla.max_relative_latency_ratio,
+                "max_relative_error_diff_percent": self.sla.max_relative_error_diff_percent,
+                "enable_probation": self.sla.enable_probation,
             },
+            "comparative": asdict(comp),
             "health_prober": self.health_prober.get_status() if self.health_prober else None,
         }

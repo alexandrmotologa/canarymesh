@@ -1,7 +1,9 @@
-"""Asynchronous streaming reverse proxy forwarder using HTTPX."""
+"""Asynchronous streaming reverse proxy forwarder using HTTPX with distributed tracing and diffing."""
 
 import asyncio
+import secrets
 import time
+import uuid
 from collections.abc import AsyncIterator
 
 import httpx
@@ -23,6 +25,7 @@ HOP_BY_HOP_HEADERS: set[str] = {
     "transfer-encoding",
     "upgrade",
     "host",
+    "content-length",
 }
 
 
@@ -81,6 +84,17 @@ class StreamingForwarder:
         forward_headers["x-forwarded-proto"] = request.url.scheme
         forward_headers["x-canary-routed"] = upstream_name
 
+        # Distributed tracing context (W3C traceparent & x-request-id)
+        request_id = headers_dict.get("x-request-id") or f"req-{uuid.uuid4().hex[:12]}"
+        forward_headers["x-request-id"] = request_id
+
+        traceparent = headers_dict.get("traceparent")
+        if not traceparent:
+            trace_id = secrets.token_hex(16)
+            span_id = secrets.token_hex(8)
+            traceparent = f"00-{trace_id}-{span_id}-01"
+        forward_headers["traceparent"] = traceparent
+
         start_time = time.perf_counter()
 
         try:
@@ -93,18 +107,6 @@ class StreamingForwarder:
                     req_content = body_bytes
                 else:
                     req_content = request.stream()
-
-            # Trigger background shadow mirroring if enabled
-            if upstream_name == "stable" and self.shadow_engine and self.shadow_engine.should_shadow():
-                asyncio.create_task(
-                    self.shadow_engine.mirror_request(
-                        method=request.method,
-                        path=path,
-                        query=query,
-                        headers=forward_headers,
-                        body_bytes=body_bytes,
-                    )
-                )
 
             upstream_response = await self._client.send(
                 self._client.build_request(
@@ -120,6 +122,20 @@ class StreamingForwarder:
             latency_ms = (time.perf_counter() - start_time) * 1000.0
             status_code = upstream_response.status_code
 
+            # Trigger background shadow mirroring with live diff comparison
+            if upstream_name == "stable" and self.shadow_engine and self.shadow_engine.should_shadow():
+                asyncio.create_task(
+                    self.shadow_engine.mirror_request(
+                        method=request.method,
+                        path=path,
+                        query=query,
+                        headers=forward_headers,
+                        body_bytes=body_bytes,
+                        stable_status=status_code,
+                        stable_latency_ms=latency_ms,
+                    )
+                )
+
             # Record telemetry
             self.telemetry.record(upstream_name, status_code, latency_ms)
 
@@ -130,11 +146,15 @@ class StreamingForwarder:
             }
             response_headers["x-canary-routed"] = upstream_name
             response_headers["x-canary-latency-ms"] = f"{latency_ms:.2f}"
+            response_headers["x-request-id"] = request_id
+            response_headers["traceparent"] = traceparent
 
             async def body_stream() -> AsyncIterator[bytes]:
                 try:
                     async for chunk in upstream_response.aiter_bytes():
                         yield chunk
+                except (httpx.StreamError, asyncio.CancelledError):
+                    pass
                 finally:
                     await upstream_response.aclose()
 
@@ -164,7 +184,7 @@ class StreamingForwarder:
                 content=b'{"error": "Gateway Timeout", "upstream": "' + upstream_name.encode() + b'"}',
                 status_code=504,
                 media_type="application/json",
-                headers={"x-canary-routed": upstream_name},
+                headers={"x-canary-routed": upstream_name, "x-request-id": request_id},
             )
         except Exception as exc:
             latency_ms = (time.perf_counter() - start_time) * 1000.0
@@ -173,5 +193,5 @@ class StreamingForwarder:
                 content=b'{"error": "Bad Gateway", "details": "' + str(exc).encode() + b'"}',
                 status_code=502,
                 media_type="application/json",
-                headers={"x-canary-routed": upstream_name},
+                headers={"x-canary-routed": upstream_name, "x-request-id": request_id},
             )

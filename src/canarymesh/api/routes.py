@@ -5,12 +5,12 @@ import json
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Response
 from fastapi.responses import HTMLResponse, PlainTextResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from canarymesh.api.metrics import generate_prometheus_metrics
-from canarymesh.config import PathRoutingRule
+from canarymesh.config import HeaderRoutingRule, PathRoutingRule
 from canarymesh.controller.health_prober import ActiveHealthProber
 from canarymesh.controller.post_mortem import PostMortemEngine
 from canarymesh.controller.rollback_guard import RollbackGuard
@@ -36,6 +36,22 @@ class ShadowUpdateRequest(BaseModel):
 class PathRuleCreateRequest(BaseModel):
     path_prefix: str = Field(..., description="URL path prefix e.g. /api/v2/")
     target: str = Field(default="canary", description="Upstream target: canary or stable")
+
+
+class HeaderRuleCreateRequest(BaseModel):
+    header_name: str = Field(..., description="HTTP header name to match (e.g. x-user-group)")
+    header_pattern: str = Field(..., description="Regex pattern e.g. beta.* or internal")
+    target: str = Field(default="canary", description="Upstream target: canary or stable")
+
+
+class SlaUpdateRequest(BaseModel):
+    max_error_rate_percent: float | None = Field(default=None, ge=0.0, le=100.0)
+    max_p99_latency_ms: float | None = Field(default=None, ge=1.0)
+    min_sample_size: int | None = Field(default=None, ge=1)
+    max_relative_latency_ratio: float | None = Field(default=None, ge=1.0)
+    max_relative_error_diff_percent: float | None = Field(default=None, ge=0.0)
+    enable_relative_analysis: bool | None = None
+    enable_probation: bool | None = None
 
 
 def create_api_router(
@@ -65,7 +81,7 @@ def create_api_router(
 
     @root_router.get("/metrics", response_class=PlainTextResponse)
     async def metrics_endpoint() -> str:
-        return generate_prometheus_metrics(traffic_router, telemetry, guard)
+        return generate_prometheus_metrics(traffic_router, telemetry, guard, shadow_engine)
 
     @root_router.get("/ui", response_class=HTMLResponse)
     async def web_ui() -> HTMLResponse:
@@ -119,6 +135,28 @@ def create_api_router(
         guard.reset()
         return {"status": "guard_reset_healthy"}
 
+    @router.get("/sla")
+    async def get_sla() -> dict[str, Any]:
+        return guard.sla.model_dump()
+
+    @router.post("/sla")
+    async def update_sla(payload: SlaUpdateRequest) -> dict[str, Any]:
+        if payload.max_error_rate_percent is not None:
+            guard.sla.max_error_rate_percent = payload.max_error_rate_percent
+        if payload.max_p99_latency_ms is not None:
+            guard.sla.max_p99_latency_ms = payload.max_p99_latency_ms
+        if payload.min_sample_size is not None:
+            guard.sla.min_sample_size = payload.min_sample_size
+        if payload.max_relative_latency_ratio is not None:
+            guard.sla.max_relative_latency_ratio = payload.max_relative_latency_ratio
+        if payload.max_relative_error_diff_percent is not None:
+            guard.sla.max_relative_error_diff_percent = payload.max_relative_error_diff_percent
+        if payload.enable_relative_analysis is not None:
+            guard.sla.enable_relative_analysis = payload.enable_relative_analysis
+        if payload.enable_probation is not None:
+            guard.sla.enable_probation = payload.enable_probation
+        return {"status": "sla_updated", "sla": guard.sla.model_dump()}
+
     @router.post("/shadow")
     async def update_shadow(payload: ShadowUpdateRequest) -> dict[str, Any]:
         if not shadow_engine:
@@ -130,6 +168,12 @@ def create_api_router(
     async def get_shadow() -> dict[str, Any]:
         if not shadow_engine:
             return {"enabled": False, "configured": False}
+        return shadow_engine.get_status()
+
+    @router.get("/shadow/diff")
+    async def get_shadow_diff() -> dict[str, Any]:
+        if not shadow_engine:
+            return {"enabled": False, "configured": False, "recent_diffs": []}
         return shadow_engine.get_status()
 
     @router.get("/rules")
@@ -149,11 +193,50 @@ def create_api_router(
             raise HTTPException(status_code=404, detail="Path rule not found")
         return {"status": "rule_deleted", "id": rule_id}
 
+    @router.post("/rules/header")
+    async def add_header_rule(payload: HeaderRuleCreateRequest) -> dict[str, Any]:
+        rule = HeaderRoutingRule(
+            header_name=payload.header_name,
+            header_pattern=payload.header_pattern,
+            target=payload.target,
+        )
+        rule_id = traffic_router.add_header_rule(rule)
+        return {"status": "header_rule_added", "id": rule_id, "rule": rule.model_dump()}
+
+    @router.delete("/rules/header/{rule_id}")
+    async def delete_header_rule(rule_id: str) -> dict[str, Any]:
+        removed = traffic_router.remove_header_rule(rule_id)
+        if not removed:
+            raise HTTPException(status_code=404, detail="Header rule not found")
+        return {"status": "header_rule_deleted", "id": rule_id}
+
     @router.get("/incidents")
     async def get_incidents() -> dict[str, Any]:
         if post_mortem:
             return {"incidents": post_mortem.get_incidents()}
         return {"incidents": []}
+
+    @router.get("/incidents/{incident_id}")
+    async def get_incident(incident_id: str) -> dict[str, Any]:
+        if not post_mortem:
+            raise HTTPException(status_code=404, detail="Post-mortem engine not configured")
+        for inc in post_mortem.incidents:
+            if inc.incident_id == incident_id:
+                return {"incident": inc.__dict__}
+        raise HTTPException(status_code=404, detail="Incident report not found")
+
+    @router.get("/incidents/{incident_id}/download")
+    async def download_incident_markdown(incident_id: str) -> Response:
+        if not post_mortem:
+            raise HTTPException(status_code=404, detail="Post-mortem engine not configured")
+        for inc in post_mortem.incidents:
+            if inc.incident_id == incident_id:
+                return Response(
+                    content=inc.markdown_summary,
+                    media_type="text/markdown",
+                    headers={"Content-Disposition": f'attachment; filename="{incident_id}.md"'},
+                )
+        raise HTTPException(status_code=404, detail="Incident report not found")
 
     @router.get("/health")
     async def get_upstream_health() -> dict[str, Any]:
@@ -187,6 +270,7 @@ def create_api_router(
                     "canary_weight": traffic_router.canary_weight,
                     "guard": guard.get_status(),
                     "rollout": rollout.get_status(),
+                    "shadow": shadow_engine.get_status() if shadow_engine else None,
                     "telemetry": {
                         k: {
                             "total_requests": m.total_requests,

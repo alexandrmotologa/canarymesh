@@ -6,8 +6,8 @@
   <title>CanaryMesh — Control Plane Operations Console</title>
   <style>
     :root {
-      --bg: #0b0f19;
-      --card-bg: rgba(17, 24, 39, 0.75);
+      --bg: #090d16;
+      --card-bg: rgba(16, 24, 40, 0.75);
       --card-border: rgba(255, 255, 255, 0.08);
       --text: #f3f4f6;
       --text-dim: #9ca3af;
@@ -16,40 +16,53 @@
       --accent-green: #10b981;
       --accent-red: #ef4444;
       --accent-purple: #8b5cf6;
+      --accent-cyan: #06b6d4;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: var(--bg); color: var(--text); min-height: 100vh; padding: 24px; }
-    .container { max-width: 1300px; margin: 0 auto; }
+    body { background-color: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; }
+    .container { max-width: 1340px; margin: 0 auto; }
     
     /* Header */
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--card-border); }
-    .brand { display: flex; align-items: center; gap: 12px; }
-    .logo-badge { background: linear-gradient(135deg, var(--accent-yellow), var(--accent-blue)); color: #000; font-weight: 900; font-size: 18px; padding: 6px 12px; border-radius: 8px; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--card-border); }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .logo-badge { background: linear-gradient(135deg, var(--accent-yellow), var(--accent-blue)); color: #000; font-weight: 900; font-size: 18px; padding: 6px 12px; border-radius: 8px; letter-spacing: 0.5px; }
     .brand h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
-    .status-badges { display: flex; gap: 12px; align-items: center; }
+    .status-badges { display: flex; gap: 10px; align-items: center; }
     .badge { padding: 6px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
     .badge-healthy { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-probation { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
     .badge-tripped { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); animation: pulse 2s infinite; }
     .badge-live { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
     .dot { width: 8px; height: 8px; border-radius: 50%; }
     .dot-green { background: #10b981; box-shadow: 0 0 8px #10b981; }
+    .dot-yellow { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
     .dot-red { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
 
+    /* Navigation Tabs */
+    .tabs-nav { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--card-border); padding-bottom: 8px; overflow-x: auto; }
+    .tab-btn { background: transparent; color: var(--text-dim); border: none; padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+    .tab-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
+    .tab-btn.active { color: #fff; background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); }
+
+    /* Tab content */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
     /* Grid layout */
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
-    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 24px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 20px; }
     
     /* Card */
     .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 20px; backdrop-filter: blur(12px); }
     .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-    .card-title { font-size: 15px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+    .card-title { font-size: 14px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
     .upstream-stable { border-top: 3px solid var(--accent-blue); }
     .upstream-canary { border-top: 3px solid var(--accent-yellow); }
     
     /* Metrics display */
-    .big-stat { font-size: 32px; font-weight: 800; margin-bottom: 4px; }
-    .stat-label { font-size: 13px; color: var(--text-dim); }
-    .metric-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 14px; }
+    .big-stat { font-size: 30px; font-weight: 800; margin-bottom: 4px; }
+    .stat-label { font-size: 12px; color: var(--text-dim); }
+    .metric-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 13px; }
     .metric-row:last-child { border-bottom: none; }
     .val-green { color: var(--accent-green); font-weight: 600; }
     .val-yellow { color: var(--accent-yellow); font-weight: 600; }
@@ -61,27 +74,38 @@
     .slider-header { display: flex; justify-content: space-between; font-size: 14px; }
     input[type=range] { width: 100%; accent-color: var(--accent-yellow); height: 6px; border-radius: 3px; cursor: pointer; }
     .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
-    button { padding: 10px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; }
+    .quick-preset-group { display: flex; gap: 6px; margin-top: 6px; }
+    .preset-btn { padding: 4px 10px; font-size: 11px; background: rgba(255,255,255,0.06); border: 1px solid var(--card-border); color: var(--text-dim); border-radius: 6px; cursor: pointer; }
+    .preset-btn:hover { color: #fff; background: rgba(255,255,255,0.12); }
+    
+    button { padding: 9px 15px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
     .btn-primary { background: var(--accent-blue); color: #fff; }
     .btn-primary:hover { background: #2563eb; }
     .btn-danger { background: var(--accent-red); color: #fff; box-shadow: 0 0 12px rgba(239, 68, 68, 0.4); }
     .btn-danger:hover { background: #dc2626; }
     .btn-success { background: var(--accent-green); color: #000; }
     .btn-success:hover { background: #059669; }
-    .btn-secondary { background: rgba(255,255,255,0.1); color: var(--text); }
-    .btn-secondary:hover { background: rgba(255,255,255,0.18); }
+    .btn-secondary { background: rgba(255,255,255,0.08); color: var(--text); border: 1px solid var(--card-border); }
+    .btn-secondary:hover { background: rgba(255,255,255,0.15); }
     
-    /* Live Chart */
+    /* Live Canvas Chart */
     .canvas-container { position: relative; width: 100%; height: 220px; }
     canvas { width: 100%; height: 100%; }
 
     /* Tables */
     table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
-    th { color: var(--text-dim); padding: 8px 12px; border-bottom: 1px solid var(--card-border); font-weight: 600; }
+    th { color: var(--text-dim); padding: 10px 12px; border-bottom: 1px solid var(--card-border); font-weight: 600; font-size: 12px; text-transform: uppercase; }
     td { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.03); }
     
-    /* Input */
-    input[type=text] { background: rgba(255,255,255,0.06); border: 1px solid var(--card-border); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 13px; }
+    /* Form Inputs */
+    input[type=text], input[type=number], select { background: rgba(255,255,255,0.06); border: 1px solid var(--card-border); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 13px; width: 100%; }
+    label { font-size: 12px; color: var(--text-dim); font-weight: 600; margin-bottom: 4px; display: block; }
+    .form-group { margin-bottom: 12px; }
+
+    /* Incident Modal / View */
+    .incident-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 999; padding: 20px; }
+    .incident-modal-content { background: #111827; border: 1px solid var(--card-border); border-radius: 12px; max-width: 800px; width: 100%; max-height: 85vh; overflow-y: auto; padding: 24px; position: relative; }
+    .incident-modal pre { background: #0b0f19; padding: 16px; border-radius: 8px; font-size: 13px; color: #93c5fd; overflow-x: auto; white-space: pre-wrap; margin-top: 12px; }
 
     @keyframes pulse {
       0%, 100% { opacity: 1; }
@@ -96,162 +120,301 @@
         <div class="logo-badge">CM</div>
         <div>
           <h1>CanaryMesh Console</h1>
-          <p style="font-size: 12px; color: var(--text-dim);">Edge Traffic Splitting &amp; Rollback Supervisor</p>
+          <p style="font-size: 12px; color: var(--text-dim);">Progressive Traffic Splitting &amp; Automated Rollback Supervisor</p>
         </div>
       </div>
       <div class="status-badges">
-        <span class="badge badge-live"><span class="dot dot-green"></span> SSE Connected</span>
+        <span class="badge badge-live"><span class="dot dot-green"></span> Live Telemetry</span>
         <span id="guardBadge" class="badge badge-healthy"><span class="dot dot-green"></span> Guard Healthy</span>
       </div>
     </header>
 
-    <!-- Upstream Comparison Grid -->
-    <div class="grid-2">
-      <!-- Stable v1 -->
-      <div class="card upstream-stable">
-        <div class="card-header">
-          <span class="card-title">Stable Service (v1)</span>
-          <span id="stableWeightBadge" style="color: var(--accent-blue); font-weight: 700; font-size: 16px;">100.0%</span>
-        </div>
-        <div style="display: flex; gap: 24px; margin-bottom: 16px;">
-          <div>
-            <div id="stableRps" class="big-stat">0.0</div>
-            <div class="stat-label">Throughput (Req/s)</div>
+    <!-- Navigation Tabs -->
+    <div class="tabs-nav">
+      <button class="tab-btn active" onclick="switchTab('overview')">📊 Operations</button>
+      <button class="tab-btn" onclick="switchTab('routing')">🔀 Dynamic Routing</button>
+      <button class="tab-btn" onclick="switchTab('shadow')">👥 Shadow &amp; Diff</button>
+      <button class="tab-btn" onclick="switchTab('rollout')">🚀 Progressive Rollout</button>
+      <button class="tab-btn" onclick="switchTab('incidents')">📋 Post-Mortem Audit</button>
+      <button class="tab-btn" onclick="switchTab('sla')">⚙️ SLA Configuration</button>
+    </div>
+
+    <!-- TAB 1: OPERATIONS OVERVIEW -->
+    <div id="tab-overview" class="tab-content active">
+      <!-- Upstream Comparison Grid -->
+      <div class="grid-2">
+        <!-- Stable v1 -->
+        <div class="card upstream-stable">
+          <div class="card-header">
+            <span class="card-title">Stable Service (v1)</span>
+            <span id="stableWeightBadge" style="color: var(--accent-blue); font-weight: 700; font-size: 16px;">100.0%</span>
           </div>
-          <div>
-            <div id="stableP99" class="big-stat">0.0 ms</div>
-            <div class="stat-label">p99 Latency</div>
+          <div style="display: flex; gap: 24px; margin-bottom: 16px;">
+            <div>
+              <div id="stableRps" class="big-stat">0.0</div>
+              <div class="stat-label">Throughput (Req/s)</div>
+            </div>
+            <div>
+              <div id="stableP99" class="big-stat">0.0 ms</div>
+              <div class="stat-label">p99 Latency</div>
+            </div>
           </div>
+          <div class="metric-row"><span>Target URL</span><span id="stableUrl" style="color: var(--text-dim);">-</span></div>
+          <div class="metric-row"><span>Health Prober</span><span id="stableHealth" class="val-green">Active (200 OK)</span></div>
+          <div class="metric-row"><span>Status 2xx / 5xx</span><span><span id="stable2xx" class="val-green">0</span> / <span id="stable5xx" class="val-red">0</span></span></div>
+          <div class="metric-row"><span>p50 / p90 / p95</span><span id="stableP50P90">0.0ms / 0.0ms / 0.0ms</span></div>
         </div>
-        <div class="metric-row"><span>Target URL</span><span id="stableUrl" style="color: var(--text-dim);">-</span></div>
-        <div class="metric-row"><span>Health Prober</span><span id="stableHealth">Active (200 OK)</span></div>
-        <div class="metric-row"><span>Status 2xx / 5xx</span><span><span id="stable2xx" class="val-green">0</span> / <span id="stable5xx" class="val-red">0</span></span></div>
-        <div class="metric-row"><span>p50 / p90</span><span id="stableP50P90">0.0 ms / 0.0 ms</span></div>
+
+        <!-- Canary v2 -->
+        <div class="card upstream-canary">
+          <div class="card-header">
+            <span class="card-title">Canary Service (v2)</span>
+            <span id="canaryWeightBadge" style="color: var(--accent-yellow); font-weight: 700; font-size: 16px;">0.0%</span>
+          </div>
+          <div style="display: flex; gap: 24px; margin-bottom: 16px;">
+            <div>
+              <div id="canaryRps" class="big-stat">0.0</div>
+              <div class="stat-label">Throughput (Req/s)</div>
+            </div>
+            <div>
+              <div id="canaryP99" class="big-stat">0.0 ms</div>
+              <div class="stat-label">p99 Latency</div>
+            </div>
+            <div>
+              <div id="canaryErrRate" class="big-stat">0.0%</div>
+              <div class="stat-label">5xx Error Rate</div>
+            </div>
+          </div>
+          <div class="metric-row"><span>Target URL</span><span id="canaryUrl" style="color: var(--text-dim);">-</span></div>
+          <div class="metric-row"><span>Health Prober</span><span id="canaryHealth" class="val-green">Active (200 OK)</span></div>
+          <div class="metric-row"><span>Status 2xx / 5xx</span><span><span id="canary2xx" class="val-green">0</span> / <span id="canary5xx" class="val-red">0</span></span></div>
+          <div class="metric-row"><span>p50 / p90 / p95</span><span id="canaryP50P90">0.0ms / 0.0ms / 0.0ms</span></div>
+        </div>
       </div>
 
-      <!-- Canary v2 -->
-      <div class="card upstream-canary">
-        <div class="card-header">
-          <span class="card-title">Canary Service (v2)</span>
-          <span id="canaryWeightBadge" style="color: var(--accent-yellow); font-weight: 700; font-size: 16px;">0.0%</span>
-        </div>
-        <div style="display: flex; gap: 24px; margin-bottom: 16px;">
+      <!-- Comparative Analysis Bar -->
+      <div class="card" style="margin-bottom: 20px; border-left: 4px solid var(--accent-cyan);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
           <div>
-            <div id="canaryRps" class="big-stat">0.0</div>
-            <div class="stat-label">Throughput (Req/s)</div>
+            <span style="font-size: 12px; text-transform: uppercase; color: var(--accent-cyan); font-weight: 700;">Relative Baseline Analysis (Canary vs Stable)</span>
+            <div id="comparativeSummary" style="font-size: 14px; margin-top: 4px;">Canary metrics are healthy relative to Stable baseline.</div>
           </div>
-          <div>
-            <div id="canaryP99" class="big-stat">0.0 ms</div>
-            <div class="stat-label">p99 Latency</div>
-          </div>
-          <div>
-            <div id="canaryErrRate" class="big-stat">0.0%</div>
-            <div class="stat-label">5xx Error Rate</div>
+          <div style="display: flex; gap: 16px; font-size: 13px;">
+            <div>Latency Ratio: <strong id="compLatencyRatio">1.0x</strong></div>
+            <div>Error Rate Delta: <strong id="compErrorDelta">0.0%</strong></div>
           </div>
         </div>
-        <div class="metric-row"><span>Target URL</span><span id="canaryUrl" style="color: var(--text-dim);">-</span></div>
-        <div class="metric-row"><span>Health Prober</span><span id="canaryHealth">Active (200 OK)</span></div>
-        <div class="metric-row"><span>Status 2xx / 5xx</span><span><span id="canary2xx" class="val-green">0</span> / <span id="canary5xx" class="val-red">0</span></span></div>
-        <div class="metric-row"><span>p50 / p90</span><span id="canaryP50P90">0.0 ms / 0.0 ms</span></div>
+      </div>
+
+      <!-- Live Chart & Control Deck Grid -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Real-Time Latency Timeline (p99)</span>
+            <span style="font-size: 12px; color: var(--text-dim);">Live SSE Feed</span>
+          </div>
+          <div class="canvas-container">
+            <canvas id="telemetryChart"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Traffic Split &amp; Actions</span>
+          </div>
+          <div class="control-deck">
+            <div class="slider-box">
+              <div class="slider-header">
+                <span>Canary Traffic Weight: <strong id="sliderWeightLabel" style="color: var(--accent-yellow);">0%</strong></span>
+                <span style="color: var(--text-dim);">Stable: <strong id="sliderStableLabel" style="color: var(--accent-blue);">100%</strong></span>
+              </div>
+              <input type="range" id="weightSlider" min="0" max="100" value="0" oninput="updateSliderLabel(this.value)">
+              <div class="quick-preset-group">
+                <button class="preset-btn" onclick="setPreset(0)">0% (Off)</button>
+                <button class="preset-btn" onclick="setPreset(5)">5% (Canary)</button>
+                <button class="preset-btn" onclick="setPreset(10)">10%</button>
+                <button class="preset-btn" onclick="setPreset(25)">25%</button>
+                <button class="preset-btn" onclick="setPreset(50)">50% (Split)</button>
+                <button class="preset-btn" onclick="setPreset(100)">100% (Full)</button>
+              </div>
+              <button class="btn-primary" style="margin-top: 8px;" onclick="applyWeight()">Apply Traffic Percentage</button>
+            </div>
+
+            <div style="border-top: 1px solid var(--card-border); padding-top: 14px;">
+              <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 8px;">Supervisor Operations</div>
+              <div class="btn-group">
+                <button class="btn-danger" onclick="triggerAbort()">🚨 Emergency Abort (0%)</button>
+                <button class="btn-success" onclick="triggerPromote()">Promote Canary (100%)</button>
+                <button class="btn-secondary" onclick="resetGuard()">Reset Guard</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Telemetry Graph & Controls Deck -->
-    <div class="grid-2">
-      <!-- Live Canvas Chart -->
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Real-Time Telemetry Timeline</span>
-          <span style="font-size: 12px; color: var(--text-dim);">Updated every 1s</span>
-        </div>
-        <div class="canvas-container">
-          <canvas id="telemetryChart"></canvas>
-        </div>
-      </div>
-
-      <!-- Control Deck -->
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Traffic Split &amp; Emergency Actions</span>
-        </div>
-        <div class="control-deck">
-          <div class="slider-box">
-            <div class="slider-header">
-              <span>Canary Traffic Weight: <strong id="sliderWeightLabel">0%</strong></span>
-              <span style="color: var(--text-dim);">Stable: <strong id="sliderStableLabel">100%</strong></span>
-            </div>
-            <input type="range" id="weightSlider" min="0" max="100" value="0" oninput="updateSliderLabel(this.value)">
-            <button class="btn-primary" style="margin-top: 6px;" onclick="applyWeight()">Apply Traffic Weight</button>
+    <!-- TAB 2: DYNAMIC ROUTING STUDIO -->
+    <div id="tab-routing" class="tab-content">
+      <div class="grid-2">
+        <!-- URL Path Prefix Rules -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">URL Path Prefix Rules</span>
           </div>
+          <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+            <input type="text" id="newPathInput" placeholder="Path prefix e.g. /api/v2/ or /checkout" style="flex: 1;">
+            <button class="btn-primary" onclick="addPathRule()">Add Path Route</button>
+          </div>
+          <div style="max-height: 280px; overflow-y: auto;">
+            <table id="pathRulesTable">
+              <thead><tr><th>Prefix</th><th>Target</th><th>Action</th></tr></thead>
+              <tbody><tr><td colspan="3" style="color: var(--text-dim);">No path rules registered.</td></tr></tbody>
+            </table>
+          </div>
+        </div>
 
-          <div style="border-top: 1px solid var(--card-border); padding-top: 14px;">
-            <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 8px;">Supervisor Operations</div>
-            <div class="btn-group">
-              <button class="btn-danger" onclick="triggerAbort()">🚨 Emergency Abort (0%)</button>
-              <button class="btn-success" onclick="triggerPromote()">Promote Canary (100%)</button>
-              <button class="btn-secondary" onclick="resetGuard()">Reset Guard</button>
-              <button id="shadowToggleBtn" class="btn-secondary" onclick="toggleShadow()">Shadow Mode: OFF</button>
+        <!-- Header Match Rules -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">HTTP Header Routing Rules</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px;">
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="newHeaderName" placeholder="Header name e.g. x-user-group" style="flex: 1;">
+              <input type="text" id="newHeaderPattern" placeholder="Regex pattern e.g. beta.*|internal" style="flex: 1;">
             </div>
+            <button class="btn-primary" onclick="addHeaderRule()">Add Header Matcher</button>
+          </div>
+          <div style="max-height: 280px; overflow-y: auto;">
+            <table id="headerRulesTable">
+              <thead><tr><th>Header</th><th>Pattern</th><th>Target</th><th>Action</th></tr></thead>
+              <tbody><tr><td colspan="4" style="color: var(--text-dim);">No header rules registered.</td></tr></tbody>
+            </table>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Progressive Rollout & Routing Rules Grid -->
-    <div class="grid-2">
-      <!-- Rollout Monitor -->
+    <!-- TAB 3: SHADOW & DIFF INSPECTOR -->
+    <div id="tab-shadow" class="tab-content">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Traffic Shadowing (Dark Launching)</span>
+          </div>
+          <p style="font-size: 13px; color: var(--text-dim); margin-bottom: 16px;">
+            Asynchronously duplicates live client traffic from Stable to Canary in the background without affecting client responses.
+          </p>
+          <div style="display: flex; gap: 14px; align-items: center; margin-bottom: 16px;">
+            <button id="shadowToggleBtnLarge" class="btn-secondary" onclick="toggleShadow()">Shadow Mode: OFF</button>
+            <div style="flex: 1;">
+              <label>Shadow Sampling Percentage: <strong id="shadowPercentLabel">100%</strong></label>
+              <input type="range" id="shadowSlider" min="1" max="100" value="100" oninput="document.getElementById('shadowPercentLabel').innerText = this.value + '%'">
+            </div>
+          </div>
+          <div class="metric-row"><span>Total Shadowed Requests</span><span id="shadowTotalReqs">0</span></div>
+          <div class="metric-row"><span>Shadow 5xx Errors</span><span id="shadowTotalErrors" class="val-red">0</span></div>
+          <div class="metric-row"><span>Response Parity Rate</span><span id="shadowParityRate" class="val-green">100.0%</span></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Live Shadow Diff Inspector</span>
+          </div>
+          <div style="max-height: 280px; overflow-y: auto;">
+            <table id="shadowDiffTable">
+              <thead><tr><th>Path</th><th>Stable</th><th>Canary</th><th>Latency Delta</th><th>Match</th></tr></thead>
+              <tbody><tr><td colspan="5" style="color: var(--text-dim);">No shadowed requests recorded yet.</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: PROGRESSIVE ROLLOUT -->
+    <div id="tab-rollout" class="tab-content">
       <div class="card">
         <div class="card-header">
-          <span class="card-title">Progressive Rollout Monitor</span>
+          <span class="card-title">Progressive Rollout Scheduler</span>
           <span id="rolloutStateBadge" class="badge" style="background: rgba(255,255,255,0.1);">IDLE</span>
         </div>
-        <div style="margin-bottom: 12px;">
-          <div style="font-size: 14px; margin-bottom: 4px;">Active Scenario: <strong id="scenarioName">None</strong></div>
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: 15px; font-weight: 700; margin-bottom: 4px;">Scenario: <span id="scenarioName">Manual / None</span></div>
           <div id="stepInfo" style="font-size: 13px; color: var(--text-dim);">Manual traffic control active.</div>
         </div>
         <div class="btn-group">
-          <button class="btn-secondary" onclick="pauseRollout()">Pause</button>
-          <button class="btn-secondary" onclick="resumeRollout()">Resume</button>
-        </div>
-      </div>
-
-      <!-- Dynamic Path Rules -->
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Dynamic Path Prefix Rules</span>
-        </div>
-        <div style="display: flex; gap: 8px; margin-bottom: 14px;">
-          <input type="text" id="newPathInput" placeholder="/api/v2/ or /checkout" style="flex: 1;">
-          <button class="btn-primary" onclick="addPathRule()">Add Canary Route</button>
-        </div>
-        <div style="max-height: 140px; overflow-y: auto;">
-          <table id="rulesTable">
-            <thead><tr><th>Prefix</th><th>Target</th><th>Action</th></tr></thead>
-            <tbody><tr><td colspan="3" style="color: var(--text-dim);">No custom path rules registered.</td></tr></tbody>
-          </table>
+          <button class="btn-secondary" onclick="pauseRollout()">⏸ Pause</button>
+          <button class="btn-secondary" onclick="resumeRollout()">▶ Resume</button>
         </div>
       </div>
     </div>
 
-    <!-- Recent Incidents Log -->
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">Incident Audit &amp; Post-Mortem Log</span>
+    <!-- TAB 5: INCIDENTS AUDIT & POST-MORTEM -->
+    <div id="tab-incidents" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Automated Rollback Post-Mortems</span>
+        </div>
+        <table id="incidentsTable">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Breach Reason</th>
+              <th>Prev Weight</th>
+              <th>5xx Errors</th>
+              <th>p99 Latency</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="6" style="color: var(--text-dim); text-align: center;">No automated rollback incidents recorded.</td></tr>
+          </tbody>
+        </table>
       </div>
-      <table id="incidentsTable">
-        <thead>
-          <tr>
-            <th>Timestamp</th>
-            <th>Breach Reason</th>
-            <th>Prev Weight</th>
-            <th>5xx Errors</th>
-            <th>p99 Latency</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td colspan="5" style="color: var(--text-dim); text-align: center;">No automated rollback incidents recorded.</td></tr>
-        </tbody>
-      </table>
+    </div>
+
+    <!-- TAB 6: SLA CONFIGURATION -->
+    <div id="tab-sla" class="tab-content">
+      <div class="card" style="max-width: 700px;">
+        <div class="card-header">
+          <span class="card-title">SLA Thresholds &amp; Safety Guard Settings</span>
+        </div>
+        <div class="form-group">
+          <label>Max 5xx Error Rate (%):</label>
+          <input type="number" id="slaMaxError" step="0.1" min="0" max="100">
+        </div>
+        <div class="form-group">
+          <label>Max p99 Latency Threshold (ms):</label>
+          <input type="number" id="slaMaxP99" step="10" min="1">
+        </div>
+        <div class="form-group">
+          <label>Min Request Samples for Evaluation:</label>
+          <input type="number" id="slaMinSamples" min="1">
+        </div>
+        <div class="form-group">
+          <label>Max Relative Latency Ratio vs Stable (e.g. 2.0x):</label>
+          <input type="number" id="slaLatencyRatio" step="0.1" min="1">
+        </div>
+        <div class="form-group">
+          <label>Max Relative Error Difference (%):</label>
+          <input type="number" id="slaErrorDiff" step="0.5" min="0">
+        </div>
+        <button class="btn-primary" onclick="saveSlaConfig()">Save SLA Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Incident Detail Modal -->
+  <div id="incidentModal" class="incident-modal" onclick="if(event.target === this) closeIncidentModal()">
+    <div class="incident-modal-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 id="modalTitle">Incident Post-Mortem</h3>
+        <button class="btn-secondary" onclick="closeIncidentModal()">✕ Close</button>
+      </div>
+      <pre id="modalContent"></pre>
+      <div style="margin-top: 16px; display: flex; justify-content: flex-end;">
+        <button id="modalDownloadBtn" class="btn-primary">Download Markdown Report</button>
+      </div>
     </div>
   </div>
 
@@ -260,9 +423,22 @@
     const historyPoints = [];
     const maxPoints = 30;
 
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+      document.getElementById('tab-' + tabId).classList.add('active');
+    }
+
     function updateSliderLabel(val) {
       document.getElementById('sliderWeightLabel').innerText = val + '%';
       document.getElementById('sliderStableLabel').innerText = (100 - val) + '%';
+    }
+
+    function setPreset(val) {
+      document.getElementById('weightSlider').value = val;
+      updateSliderLabel(val);
+      applyWeight();
     }
 
     async function applyWeight() {
@@ -288,12 +464,13 @@
 
     async function toggleShadow() {
       shadowEnabled = !shadowEnabled;
+      const pct = parseFloat(document.getElementById('shadowSlider').value) || 100;
       await fetch('/api/v1/canary/shadow', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled: shadowEnabled, percentage: 100 })
+        body: JSON.stringify({ enabled: shadowEnabled, percentage: pct })
       });
-      document.getElementById('shadowToggleBtn').innerText = 'Shadow Mode: ' + (shadowEnabled ? 'ON' : 'OFF');
+      document.getElementById('shadowToggleBtnLarge').innerText = 'Shadow Mode: ' + (shadowEnabled ? 'ON' : 'OFF');
     }
 
     async function pauseRollout() {
@@ -321,26 +498,108 @@
       loadRules();
     }
 
+    async function addHeaderRule() {
+      const name = document.getElementById('newHeaderName').value.trim();
+      const pattern = document.getElementById('newHeaderPattern').value.trim();
+      if (!name || !pattern) return;
+      await fetch('/api/v1/canary/rules/header', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ header_name: name, header_pattern: pattern, target: 'canary' })
+      });
+      document.getElementById('newHeaderName').value = '';
+      document.getElementById('newHeaderPattern').value = '';
+      loadRules();
+    }
+
+    async function deleteHeaderRule(ruleId) {
+      await fetch('/api/v1/canary/rules/header/' + ruleId, { method: 'DELETE' });
+      loadRules();
+    }
+
     async function loadRules() {
       const resp = await fetch('/api/v1/canary/rules');
       const data = await resp.json();
-      const tbody = document.querySelector('#rulesTable tbody');
+      
+      const pbody = document.querySelector('#pathRulesTable tbody');
       if (!data.path_rules || data.path_rules.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" style="color: var(--text-dim);">No custom path rules registered.</td></tr>';
-        return;
+        pbody.innerHTML = '<tr><td colspan="3" style="color: var(--text-dim);">No path rules registered.</td></tr>';
+      } else {
+        pbody.innerHTML = data.path_rules.map(r => `
+          <tr>
+            <td><code>${r.path_prefix}</code></td>
+            <td><span style="color: var(--accent-yellow);">${r.target}</span></td>
+            <td><button class="btn-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="deletePathRule('${r.id}')">Delete</button></td>
+          </tr>
+        `).join('');
       }
-      tbody.innerHTML = data.path_rules.map(r => `
-        <tr>
-          <td><code>${r.path_prefix}</code></td>
-          <td><span style="color: var(--accent-yellow);">${r.target}</span></td>
-          <td><button style="padding: 4px 8px; font-size: 11px; background: rgba(239,68,68,0.2); color: #f87171;" onclick="deletePathRule('${r.id}')">Delete</button></td>
-        </tr>
-      `).join('');
+
+      const hbody = document.querySelector('#headerRulesTable tbody');
+      if (!data.header_rules || data.header_rules.length === 0) {
+        hbody.innerHTML = '<tr><td colspan="4" style="color: var(--text-dim);">No header rules registered.</td></tr>';
+      } else {
+        hbody.innerHTML = data.header_rules.map(r => `
+          <tr>
+            <td><code>${r.header_name}</code></td>
+            <td><code>${r.header_pattern}</code></td>
+            <td><span style="color: var(--accent-yellow);">${r.target}</span></td>
+            <td><button class="btn-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="deleteHeaderRule('${r.id}')">Delete</button></td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    async function loadSlaConfig() {
+      const resp = await fetch('/api/v1/canary/sla');
+      if (resp.ok) {
+        const sla = await resp.json();
+        document.getElementById('slaMaxError').value = sla.max_error_rate_percent || 1.0;
+        document.getElementById('slaMaxP99').value = sla.max_p99_latency_ms || 350.0;
+        document.getElementById('slaMinSamples').value = sla.min_sample_size || 10;
+        document.getElementById('slaLatencyRatio').value = sla.max_relative_latency_ratio || 2.0;
+        document.getElementById('slaErrorDiff').value = sla.max_relative_error_diff_percent || 3.0;
+      }
+    }
+
+    async function saveSlaConfig() {
+      const payload = {
+        max_error_rate_percent: parseFloat(document.getElementById('slaMaxError').value),
+        max_p99_latency_ms: parseFloat(document.getElementById('slaMaxP99').value),
+        min_sample_size: parseInt(document.getElementById('slaMinSamples').value),
+        max_relative_latency_ratio: parseFloat(document.getElementById('slaLatencyRatio').value),
+        max_relative_error_diff_percent: parseFloat(document.getElementById('slaErrorDiff').value),
+        enable_relative_analysis: true,
+      };
+      await fetch('/api/v1/canary/sla', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      alert('SLA Configuration Saved Successfully');
+    }
+
+    async function viewIncident(incidentId) {
+      const resp = await fetch('/api/v1/canary/incidents/' + incidentId);
+      if (resp.ok) {
+        const data = await resp.json();
+        const inc = data.incident;
+        document.getElementById('modalTitle').innerText = 'Incident Report: ' + inc.incident_id;
+        document.getElementById('modalContent').innerText = inc.markdown_summary;
+        document.getElementById('modalDownloadBtn').onclick = () => {
+          window.location.href = '/api/v1/canary/incidents/' + inc.incident_id + '/download';
+        };
+        document.getElementById('incidentModal').style.display = 'flex';
+      }
+    }
+
+    function closeIncidentModal() {
+      document.getElementById('incidentModal').style.display = 'none';
     }
 
     // Canvas Chart
     function drawChart() {
       const canvas = document.getElementById('telemetryChart');
+      if (!canvas) return;
       const ctx = canvas.getContext('2d');
       const rect = canvas.getBoundingClientRect();
       canvas.width = rect.width * window.devicePixelRatio;
@@ -360,7 +619,6 @@
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
       }
 
-      // Max scale latency
       const maxLatency = Math.max(100, ...historyPoints.map(p => Math.max(p.stableP99, p.canaryP99)));
 
       function plotLine(key, color) {
@@ -411,65 +669,98 @@
       document.getElementById('canary5xx').innerText = canary.status_5xx || 0;
       document.getElementById('canaryP50P90').innerText = `${(canary.p50_ms || 0).toFixed(1)}ms / ${(canary.p90_ms || 0).toFixed(1)}ms`;
 
-      // Guard
+      // Guard & Comparative
       const guard = data.guard || {};
       const guardBadge = document.getElementById('guardBadge');
       if (guard.state === 'TRIPPED') {
         guardBadge.className = 'badge badge-tripped';
         guardBadge.innerHTML = '<span class="dot dot-red"></span> TRIPPED: ' + (guard.last_trip_reason || 'Breach');
+      } else if (guard.state === 'PROBATION') {
+        guardBadge.className = 'badge badge-probation';
+        guardBadge.innerHTML = '<span class="dot dot-yellow"></span> PROBATION';
       } else {
         guardBadge.className = 'badge badge-healthy';
         guardBadge.innerHTML = '<span class="dot dot-green"></span> Guard Healthy';
       }
 
-      // Rollout
-      const rollout = data.rollout || {};
-      document.getElementById('rolloutStateBadge').innerText = rollout.state || 'IDLE';
-      document.getElementById('scenarioName').innerText = rollout.scenario_name || 'None';
-      if (rollout.current_step) {
-        document.getElementById('stepInfo').innerText = `Step ${rollout.current_step.step_number}/${rollout.total_steps}: ${rollout.current_step.weight}% weight (${rollout.current_step.remaining_seconds}s remaining)`;
-      } else {
-        document.getElementById('stepInfo').innerText = 'Manual traffic control active.';
+      if (guard.comparative) {
+        document.getElementById('comparativeSummary').innerText = guard.comparative.summary;
+        document.getElementById('compLatencyRatio').innerText = guard.comparative.latency_ratio + 'x';
+        document.getElementById('compErrorDelta').innerText = guard.comparative.error_diff_percent + '%';
+      }
+
+      // Shadow data
+      const shadow = data.shadow;
+      if (shadow) {
+        document.getElementById('shadowTotalReqs').innerText = shadow.total_shadowed_requests || 0;
+        document.getElementById('shadowTotalErrors').innerText = shadow.total_shadow_errors || 0;
+        document.getElementById('shadowParityRate').innerText = (shadow.parity_rate_percent || 100.0) + '%';
+        if (shadow.recent_diffs && shadow.recent_diffs.length > 0) {
+          const sbody = document.querySelector('#shadowDiffTable tbody');
+          sbody.innerHTML = shadow.recent_diffs.map(d => `
+            <tr>
+              <td><code>${d.path}</code></td>
+              <td><span class="val-green">${d.stable_status || 200}</span></td>
+              <td><span class="${d.canary_status >= 500 ? 'val-red' : 'val-yellow'}">${d.canary_status}</span></td>
+              <td>${d.latency_delta_ms !== null ? (d.latency_delta_ms > 0 ? '+' : '') + d.latency_delta_ms + 'ms' : '-'}</td>
+              <td>${d.status_match ? '✅ Match' : '❌ Mismatch'}</td>
+            </tr>
+          `).join('');
+        }
       }
 
       // Incidents table
       if (guard.recent_trips && guard.recent_trips.length > 0) {
         const tbody = document.querySelector('#incidentsTable tbody');
-        tbody.innerHTML = guard.recent_trips.map(t => `
+        tbody.innerHTML = guard.recent_trips.map((t, idx) => `
           <tr>
             <td>${t.timestamp.includes('T') ? t.timestamp.split('T')[1].slice(0, 8) : t.timestamp}</td>
             <td style="color: var(--accent-red);">${t.reason}</td>
             <td>${t.previous_weight}%</td>
             <td>${t.total_requests}</td>
             <td>${t.p99_ms} ms</td>
+            <td><button class="btn-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="loadAndShowIncident(${idx})">View Report</button></td>
           </tr>
         `).join('');
       }
 
-      // Push history
       historyPoints.push({
         stableP99: stable.p99_ms || 0,
         canaryP99: canary.p99_ms || 0,
-        errRate: canary.error_rate_percent || 0
       });
       if (historyPoints.length > maxPoints) historyPoints.shift();
       drawChart();
     }
 
+    async function loadAndShowIncident(index) {
+      const resp = await fetch('/api/v1/canary/incidents');
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.incidents && data.incidents[index]) {
+          const inc = data.incidents[index];
+          document.getElementById('modalTitle').innerText = 'Incident Report: ' + inc.incident_id;
+          document.getElementById('modalContent').innerText = inc.markdown_summary;
+          document.getElementById('modalDownloadBtn').onclick = () => {
+            window.location.href = '/api/v1/canary/incidents/' + inc.incident_id + '/download';
+          };
+          document.getElementById('incidentModal').style.display = 'flex';
+        }
+      }
+    }
+
     async function init() {
       await loadRules();
+      await loadSlaConfig();
       try {
         const res = await fetch('/api/v1/canary/status');
         if (res.ok) {
           const initial = await res.json();
-          // Seed initial chart timeline
           const stableP99 = (initial.telemetry && initial.telemetry.stable) ? initial.telemetry.stable.p99_ms || 18 : 18;
           const canaryP99 = (initial.telemetry && initial.telemetry.canary) ? initial.telemetry.canary.p99_ms || 32 : 32;
           for (let i = 0; i < 8; i++) {
             historyPoints.push({
               stableP99: Math.max(5, stableP99 + (Math.sin(i) * 3)),
               canaryP99: Math.max(10, canaryP99 + (Math.cos(i) * 5)),
-              errRate: 0
             });
           }
           applyTelemetryData(initial);

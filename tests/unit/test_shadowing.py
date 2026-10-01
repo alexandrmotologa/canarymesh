@@ -1,4 +1,4 @@
-"""Unit tests for traffic shadowing and dark launching."""
+"""Unit tests for traffic shadowing, dark launching, and response diffing."""
 
 import httpx
 import pytest
@@ -28,7 +28,7 @@ def mock_shadow_transport():
 
 
 @pytest.mark.asyncio
-async def test_shadow_engine_mirroring(mock_shadow_transport):
+async def test_shadow_engine_mirroring_and_diff(mock_shadow_transport):
     client, records = mock_shadow_transport
     canary_cfg = UpstreamConfig(name="canary", url="http://mock-canary")
     telemetry = TelemetryManager(window_size_seconds=60)
@@ -49,12 +49,22 @@ async def test_shadow_engine_mirroring(mock_shadow_transport):
         query="ref=123",
         headers={"user-agent": "test-runner", "host": "proxy"},
         body_bytes=b'{"item": "book"}',
+        stable_status=200,
+        stable_latency_ms=18.5,
     )
 
     assert len(records) == 1
     assert records[0]["url"] == "http://mock-canary/api/v1/orders?ref=123"
     assert records[0]["headers"]["x-canary-shadow"] == "true"
     assert shadow.total_shadowed_requests == 1
+
+    # Verify diff history & status
+    status = shadow.get_status()
+    assert status["parity_rate_percent"] == 100.0
+    assert len(status["recent_diffs"]) == 1
+    assert status["recent_diffs"][0]["status_match"] is True
+    assert status["recent_diffs"][0]["stable_status"] == 200
+    assert status["recent_diffs"][0]["canary_status"] == 200
 
     # Verify telemetry was recorded under canary
     snap = telemetry.canary.snapshot()

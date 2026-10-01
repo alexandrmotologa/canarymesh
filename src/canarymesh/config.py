@@ -1,5 +1,6 @@
 """Configuration models for CanaryMesh proxy, routing, and rollback guard."""
 
+import uuid
 
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -20,8 +21,28 @@ class SlaThresholds(BaseModel):
     min_sample_size: int = Field(default=10, ge=1)
     cooldown_seconds: int = Field(default=30, ge=5)
 
+    # Relative comparative SLA analysis (Canary vs Stable)
+    enable_relative_analysis: bool = Field(
+        default=True,
+        description="Compare Canary degradation relative to Stable baseline",
+    )
+    max_relative_latency_ratio: float = Field(
+        default=2.0,
+        ge=1.0,
+        description="Max allowed ratio of Canary p99 to Stable p99 (e.g. 2.0x)",
+    )
+    max_relative_error_diff_percent: float = Field(
+        default=3.0,
+        ge=0.0,
+        description="Max allowed error rate difference: (Canary 5xx% - Stable 5xx%)",
+    )
 
-import uuid
+    # Circuit breaker probation mode
+    enable_probation: bool = Field(
+        default=False,
+        description="Allow probation state with trial traffic after cooldown",
+    )
+    probation_weight: float = Field(default=1.0, ge=0.1, le=10.0)
 
 
 class HeaderRoutingRule(BaseModel):
@@ -65,3 +86,4 @@ class CanaryMeshConfig(BaseSettings):
     window_size_seconds: int = Field(default=60, ge=5, le=300)
     eval_interval_seconds: float = Field(default=1.0, ge=0.2, le=10.0)
     scenario_path: str | None = None
+    trace_context_enabled: bool = True

@@ -2,11 +2,15 @@
 
 import asyncio
 import logging
+from pathlib import Path
 
 import httpx
 import typer
 import uvicorn
+import yaml
 from rich.console import Console
+from rich.panel import Panel
+from rich.syntax import Syntax
 from rich.table import Table
 
 from canarymesh.api.app import create_control_app
@@ -49,6 +53,8 @@ def start(
     max_error_rate: float = typer.Option(1.0, "--max-error-rate", help="Rollback threshold 5xx error rate %"),
     max_p99_ms: float = typer.Option(350.0, "--max-p99-ms", help="Rollback threshold p99 latency ms"),
     min_samples: int = typer.Option(10, "--min-samples", help="Min samples before evaluating rollback"),
+    relative_ratio: float = typer.Option(2.0, "--relative-ratio", help="Max Canary/Stable p99 latency ratio"),
+    relative_err_diff: float = typer.Option(3.0, "--relative-err-diff", help="Max Canary - Stable 5xx% diff"),
     webhook: list[str] | None = typer.Option(None, "--webhook", help="Webhook notification URLs"),
 ):
     """Start CanaryMesh edge proxy, control plane, and automated rollback guard."""
@@ -68,6 +74,8 @@ def start(
             max_error_rate=max_error_rate,
             max_p99_ms=max_p99_ms,
             min_samples=min_samples,
+            relative_ratio=relative_ratio,
+            relative_err_diff=relative_err_diff,
             webhooks=webhook or [],
         )
     )
@@ -88,9 +96,10 @@ async def _start_runtime(
     max_error_rate: float,
     max_p99_ms: float,
     min_samples: int,
+    relative_ratio: float,
+    relative_err_diff: float,
     webhooks: list[str],
 ):
-    # Configure logging level
     logging.basicConfig(level=logging.WARNING if dashboard else logging.INFO)
 
     cfg = CanaryMeshConfig(
@@ -106,10 +115,11 @@ async def _start_runtime(
             max_error_rate_percent=max_error_rate,
             max_p99_latency_ms=max_p99_ms,
             min_sample_size=min_samples,
+            max_relative_latency_ratio=relative_ratio,
+            max_relative_error_diff_percent=relative_err_diff,
         ),
     )
 
-    # Core components
     router = TrafficRouter(cfg)
     telemetry = TelemetryManager(window_size_seconds=cfg.window_size_seconds)
     post_mortem = PostMortemEngine()
@@ -135,7 +145,6 @@ async def _start_runtime(
     if scenario:
         rollout.load_scenario(scenario)
 
-    # Instantiate FastAPI apps
     proxy_app = create_proxy_app(forwarder)
     control_app = create_control_app(
         traffic_router=router,
@@ -156,7 +165,6 @@ async def _start_runtime(
 
     stop_event = asyncio.Event()
 
-    # Start background tasks
     await health_prober.start()
     await guard.start()
     if scenario:
@@ -192,7 +200,6 @@ async def _start_runtime(
             )
             tasks.append(dashboard_task)
 
-        # Wait until stop event is triggered or interrupted
         while not stop_event.is_set():
             await asyncio.sleep(0.5)
 
@@ -261,7 +268,7 @@ def status(
         resp.raise_for_status()
         data = resp.json()
 
-        table = Table(title="CanaryMesh Status", show_header=True)
+        table = Table(title="CanaryMesh Runtime Status", show_header=True)
         table.add_column("Component", style="bold cyan")
         table.add_column("Value")
 
@@ -271,9 +278,110 @@ def status(
         table.add_row("Rollout Stage", data["rollout"]["state"])
         table.add_row("Total Incidents", str(data["guard"]["total_trips"]))
 
+        if data.get("shadow"):
+            table.add_row(
+                "Shadow Mode",
+                f"{'ON' if data['shadow']['enabled'] else 'OFF'} ({data['shadow']['shadow_percentage']}%, Parity: {data['shadow']['parity_rate_percent']}%)",
+            )
+
         console.print(table)
     except Exception as exc:
         console.print(f"[bold red]Could not connect to control plane at {control_url}:[/bold red] {exc}")
+
+
+@app.command()
+def rules(
+    control_url: str = typer.Option("http://127.0.0.1:8090", "--control-url", help="Control plane URL"),
+):
+    """List active path prefix and header routing rules."""
+    try:
+        resp = httpx.get(f"{control_url.rstrip('/')}/api/v1/canary/rules")
+        resp.raise_for_status()
+        data = resp.json()
+
+        table = Table(title="Dynamic Routing Rules", show_header=True)
+        table.add_column("Type", style="bold")
+        table.add_column("ID", style="dim")
+        table.add_column("Matcher")
+        table.add_column("Target", style="bold yellow")
+
+        for p in data.get("path_rules", []):
+            table.add_row("Path Prefix", p["id"], p["path_prefix"], p["target"])
+        for h in data.get("header_rules", []):
+            table.add_row("Header Match", h["id"], f"{h['header_name']} ~ {h['header_pattern']}", h["target"])
+
+        console.print(table)
+    except Exception as exc:
+        console.print(f"[bold red]Could not fetch rules:[/bold red] {exc}")
+
+
+@app.command()
+def incidents(
+    control_url: str = typer.Option("http://127.0.0.1:8090", "--control-url", help="Control plane URL"),
+    incident_id: str | None = typer.Argument(None, help="Optional incident ID to view full markdown report"),
+):
+    """List or inspect rollback incident post-mortem reports."""
+    try:
+        if incident_id:
+            resp = httpx.get(f"{control_url.rstrip('/')}/api/v1/canary/incidents/{incident_id}")
+            resp.raise_for_status()
+            report = resp.json()["incident"]
+            syntax = Syntax(report["markdown_summary"], "markdown", theme="monokai", line_numbers=False)
+            console.print(Panel(syntax, title=f"Incident Post-Mortem: {incident_id}", expand=False))
+        else:
+            resp = httpx.get(f"{control_url.rstrip('/')}/api/v1/canary/incidents")
+            resp.raise_for_status()
+            data = resp.json()
+            table = Table(title="Rollback Post-Mortem Audit Log", show_header=True)
+            table.add_column("Incident ID", style="bold cyan")
+            table.add_column("Timestamp")
+            table.add_column("Reason", style="red")
+            table.add_column("Prev Weight")
+            table.add_column("5xx Errors")
+            table.add_column("p99 Latency")
+
+            for inc in data.get("incidents", []):
+                table.add_row(
+                    inc["incident_id"],
+                    inc["timestamp"],
+                    inc["reason"],
+                    f"{inc['previous_canary_weight']}%",
+                    str(inc["failed_requests_count"]),
+                    f"{inc['p99_ms']:.1f} ms",
+                )
+            console.print(table)
+    except Exception as exc:
+        console.print(f"[bold red]Could not fetch incidents:[/bold red] {exc}")
+
+
+@app.command()
+def validate_scenario(
+    scenario_path: str = typer.Argument(..., help="Path to YAML scenario file"),
+):
+    """Validate a progressive rollout scenario file syntax and SLA parameters."""
+    path = Path(scenario_path)
+    if not path.exists():
+        console.print(f"[bold red]File not found:[/bold red] {scenario_path}")
+        raise typer.Exit(1)
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+
+        name = data.get("name", "unnamed")
+        steps = data.get("steps", [])
+        if not steps:
+            console.print("[bold red]Scenario must contain at least one step in 'steps'[/bold red]")
+            raise typer.Exit(1)
+
+        total_duration = sum(s.get("duration_seconds", 0) for s in steps)
+        console.print(f"[bold green]Scenario '{name}' is valid![/bold green]")
+        console.print(f"Total Steps: {len(steps)} | Total Duration: {total_duration}s")
+        for idx, s in enumerate(steps, 1):
+            console.print(f"  Step {idx}: [yellow]{s.get('weight')}%[/yellow] for {s.get('duration_seconds')}s")
+    except Exception as exc:
+        console.print(f"[bold red]Invalid scenario file:[/bold red] {exc}")
+        raise typer.Exit(1)
 
 
 @app.command()

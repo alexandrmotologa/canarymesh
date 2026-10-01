@@ -31,11 +31,13 @@ async def test_alert_dispatcher_formatting(mock_webhook_client):
 
     discord_url = "https://discord.com/api/webhooks/123/token"
     slack_url = "https://hooks.slack.com/services/T00/B00/X00"
+    telegram_url = "https://api.telegram.org/bot123456:ABC-DEF/sendMessage?chat_id=-100123456"
+    pagerduty_url = "https://events.pagerduty.com/v2/enqueue/my-service-key"
     generic_url = "https://sentinel.internal/webhook"
 
     post_mortem = PostMortemEngine()
     dispatcher = AlertDispatcher(
-        webhook_urls=[discord_url, slack_url, generic_url],
+        webhook_urls=[discord_url, slack_url, telegram_url, pagerduty_url, generic_url],
         http_client=client,
         post_mortem_engine=post_mortem,
     )
@@ -64,12 +66,22 @@ async def test_alert_dispatcher_formatting(mock_webhook_client):
     assert "blocks" in slack_payload
     assert slack_payload["blocks"][0]["type"] == "header"
 
-    # 3. Check Generic formatting
+    # 3. Check Telegram formatting
+    tg_payload = payloads[telegram_url]
+    assert tg_payload["chat_id"] == "-100123456"
+    assert "<b>CanaryMesh Emergency Rollback</b>" in tg_payload["text"]
+
+    # 4. Check PagerDuty formatting
+    pd_payload = payloads[pagerduty_url]
+    assert pd_payload["event_action"] == "trigger"
+    assert pd_payload["payload"]["severity"] == "critical"
+
+    # 5. Check Generic formatting
     generic_payload = payloads[generic_url]
     assert generic_payload["event"] == "EMERGENCY_ROLLBACK"
     assert generic_payload["previous_canary_weight"] == 30.0
 
-    # 4. Check Post-Mortem record
+    # 6. Check Post-Mortem record
     assert len(post_mortem.incidents) == 1
     assert post_mortem.incidents[0].failed_requests_count == 10
     assert "Incident Post-Mortem" in post_mortem.incidents[0].markdown_summary

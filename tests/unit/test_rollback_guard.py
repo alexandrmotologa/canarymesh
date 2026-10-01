@@ -30,6 +30,9 @@ def setup_guard():
             max_error_rate_percent=5.0,
             max_p99_latency_ms=200.0,
             min_sample_size=10,
+            enable_relative_analysis=True,
+            max_relative_latency_ratio=2.0,
+            max_relative_error_diff_percent=3.0,
         ),
     )
     router = TrafficRouter(cfg)
@@ -91,6 +94,25 @@ async def test_guard_trips_on_high_latency(setup_guard):
     assert guard.state == GuardState.TRIPPED
     assert router.canary_weight == 0.0
     assert "p99 latency" in trip_event.reason.lower()
+
+
+@pytest.mark.asyncio
+async def test_guard_trips_on_relative_degradation(setup_guard):
+    guard, router, telemetry, _ = setup_guard
+
+    # Stable has 10 fast requests (15ms)
+    for _ in range(10):
+        telemetry.record("stable", 200, 15.0)
+
+    # Canary has 10 requests at 45ms (below absolute 200ms threshold, but 3.0x slower than Stable)
+    for _ in range(10):
+        telemetry.record("canary", 200, 45.0)
+
+    trip_event = await guard.evaluate()
+    assert trip_event is not None
+    assert guard.state == GuardState.TRIPPED
+    assert router.canary_weight == 0.0
+    assert "relative degradation" in trip_event.reason.lower()
 
 
 @pytest.mark.asyncio

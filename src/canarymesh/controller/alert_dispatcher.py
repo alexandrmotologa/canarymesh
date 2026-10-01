@@ -1,7 +1,8 @@
-"""Multi-channel alert dispatcher supporting Discord, Slack, and generic webhooks."""
+"""Multi-channel alert dispatcher supporting Discord, Slack, Telegram, PagerDuty, and generic webhooks."""
 
 import datetime
 import logging
+import urllib.parse
 from typing import Any
 
 import httpx
@@ -12,7 +13,7 @@ logger = logging.getLogger("canarymesh.alerts")
 
 
 class AlertDispatcher:
-    """Dispatches formatted incident notifications to Discord, Slack, and generic webhook endpoints."""
+    """Dispatches formatted incident notifications to Discord, Slack, Telegram, PagerDuty, and webhook endpoints."""
 
     def __init__(
         self,
@@ -113,7 +114,47 @@ class AlertDispatcher:
                 ]
             }
 
-        # 3. Generic JSON Webhook (Sentinel / Custom Receiver)
+        # 3. Telegram Bot API
+        if "api.telegram.org/bot" in url:
+            parsed = urllib.parse.urlparse(url)
+            params = urllib.parse.parse_qs(parsed.query)
+            chat_id = params.get("chat_id", [""])[0]
+            tg_text = (
+                f"🚨 <b>CanaryMesh Emergency Rollback</b>\n\n"
+                f"<b>Reason:</b> {reason}\n"
+                f"<b>Traffic Shift:</b> {previous_weight:.1f}% → 0.0%\n"
+                f"<b>5xx Errors:</b> {err_rate:.2f}%\n"
+                f"<b>p99 Latency:</b> {p99:.1f} ms\n"
+                f"<b>Samples:</b> {total_reqs} requests\n"
+                f"<i>Timestamp: {timestamp}</i>"
+            )
+            return {
+                "chat_id": chat_id,
+                "text": tg_text,
+                "parse_mode": "HTML",
+            }
+
+        # 4. PagerDuty Events API v2
+        if "events.pagerduty.com" in url:
+            return {
+                "routing_key": url.split("/")[-1] if "/" in url else "canarymesh",
+                "event_action": "trigger",
+                "payload": {
+                    "summary": f"CanaryMesh Emergency Rollback: {reason}",
+                    "severity": "critical",
+                    "source": "canarymesh-edge",
+                    "timestamp": timestamp,
+                    "custom_details": {
+                        "reason": reason,
+                        "previous_weight": previous_weight,
+                        "error_rate_percent": err_rate,
+                        "p99_latency_ms": p99,
+                        "total_requests": total_reqs,
+                    },
+                },
+            }
+
+        # 5. Generic JSON Webhook (Sentinel / Custom Receiver)
         return {
             "event": "EMERGENCY_ROLLBACK",
             "service": "canarymesh",
