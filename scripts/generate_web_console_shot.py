@@ -9,10 +9,8 @@ STATIC_HTML = BASE_DIR / "src" / "canarymesh" / "api" / "static" / "index.html"
 OUT_FILE = BASE_DIR / "docs" / "images" / "web_console.png"
 TEMP_HTML = BASE_DIR / "docs" / "images" / "temp_console.html"
 
-# Read original index.html
 raw_html = STATIC_HTML.read_text(encoding="utf-8")
 
-# Create standalone version with pre-baked real telemetry and browser chrome frame
 chart_points_js = """
     for (let i = 0; i < 24; i++) {
       historyPoints.push({
@@ -21,16 +19,7 @@ chart_points_js = """
         errRate: i > 18 ? 2.1 : 0.4
       });
     }
-    
-    // Populate active rules
-    const rulesTbody = document.querySelector('#rulesTable tbody');
-    rulesTbody.innerHTML = `
-      <tr><td><code>/api/v2/*</code></td><td><span style="color: var(--accent-yellow); font-weight:600;">canary</span></td><td><button style="padding: 4px 8px; font-size: 11px; background: rgba(239,68,68,0.2); color: #f87171;">Delete</button></td></tr>
-      <tr><td><code>/checkout/v2</code></td><td><span style="color: var(--accent-yellow); font-weight:600;">canary</span></td><td><button style="padding: 4px 8px; font-size: 11px; background: rgba(239,68,68,0.2); color: #f87171;">Delete</button></td></tr>
-      <tr><td><code>/features/dark-launch</code></td><td><span style="color: var(--accent-yellow); font-weight:600;">canary</span></td><td><button style="padding: 4px 8px; font-size: 11px; background: rgba(239,68,68,0.2); color: #f87171;">Delete</button></td></tr>
-    `;
 
-    // Populate active telemetry
     applyTelemetryData({
       canary_weight: 25.0,
       telemetry: {
@@ -39,6 +28,11 @@ chart_points_js = """
       },
       guard: {
         state: 'HEALTHY',
+        comparative: {
+          summary: 'Canary metrics are healthy relative to Stable baseline',
+          latency_ratio: 2.34,
+          error_diff_percent: 1.68
+        },
         recent_trips: [
           {
             timestamp: "2026-09-10T14:22:18.000Z",
@@ -54,19 +48,21 @@ chart_points_js = """
         scenario_name: 'progressive-rollout.yaml',
         total_steps: 5,
         current_step: { step_number: 2, weight: 25.0, remaining_seconds: 42 }
+      },
+      shadow: {
+        enabled: true,
+        shadow_percentage: 100,
+        total_shadowed_requests: 1240,
+        total_shadow_errors: 12,
+        parity_rate_percent: 99.0
       }
     });
 
-    document.getElementById('shadowToggleBtn').innerText = 'Shadow Mode: ON';
-    document.getElementById('shadowToggleBtn').style.borderColor = 'var(--accent-green)';
-    document.getElementById('shadowToggleBtn').style.color = '#34d399';
     drawChart();
 """
 
-# Replace init() call with standalone mock initialization
 modified_html = raw_html.replace("init();", chart_points_js)
 
-# Wrap in an elegant modern browser container
 styled_page = f"""<!DOCTYPE html>
 <html>
 <head>
@@ -84,7 +80,7 @@ styled_page = f"""<!DOCTYPE html>
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }}
     .browser-frame {{
-      background: #0b0f19;
+      background: #090d16;
       border-radius: 12px;
       box-shadow: 0 25px 60px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.1);
       overflow: hidden;
@@ -157,7 +153,7 @@ TEMP_HTML.write_text(styled_page, encoding="utf-8")
 cmd = [
     EDGE_PATH,
     "--headless=new",
-    "--window-size=1420,1350",
+    "--window-size=1420,1380",
     "--default-background-color=030712",
     f"--screenshot={OUT_FILE.resolve()}",
     TEMP_HTML.resolve().as_uri(),

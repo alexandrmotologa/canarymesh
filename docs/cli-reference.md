@@ -1,6 +1,6 @@
 # CLI reference
 
-The `canarymesh` command-line interface provides operational commands to start the proxy, manage weights, inspect status, and run simulations.
+The `canarymesh` command-line interface provides operational commands to start the proxy, manage weights and routing rules, inspect incidents, and run simulations.
 
 ## Commands
 
@@ -23,10 +23,14 @@ Options:
 * `--control-host`: Listening host for management REST API. Default: `0.0.0.0`.
 * `--scenario`: Path to progressive rollout YAML scenario file.
 * `--dashboard, -d`: Launch the interactive split-screen Rich terminal user interface.
+* `--shadow`: Enable dark launch traffic shadowing to Canary.
+* `--shadow-percent`: Shadow traffic percentage (1-100). Default: `100.0`.
 * `--max-error-rate`: Error rate threshold percentage for automated rollback. Default: `1.0`.
 * `--max-p99-ms`: 99th percentile latency threshold in milliseconds. Default: `350.0`.
 * `--min-samples`: Minimum requests required before evaluating SLA. Default: `10`.
-* `--webhook`: Webhook endpoint for alert notifications. Can be specified multiple times.
+* `--relative-ratio`: Max allowed Canary/Stable p99 latency ratio. Default: `2.0`.
+* `--relative-err-diff`: Max allowed Canary - Stable 5xx% difference. Default: `3.0`.
+* `--webhook`: Webhook notification URLs (Discord, Slack, Telegram, PagerDuty, or custom). Can be specified multiple times.
 
 ### `canarymesh set-weight`
 
@@ -60,9 +64,37 @@ Queries and displays active runtime metrics, weights, and guard state.
 canarymesh status --control-url http://127.0.0.1:8090
 ```
 
+### `canarymesh rules`
+
+Lists all active dynamic path prefix and header match routing rules.
+
+```bash
+canarymesh rules --control-url http://127.0.0.1:8090
+```
+
+### `canarymesh incidents`
+
+Lists all recorded automated rollback incidents or displays a specific post-mortem markdown report.
+
+```bash
+# List all incidents
+canarymesh incidents --control-url http://127.0.0.1:8090
+
+# View specific post-mortem report
+canarymesh incidents inc-07ca7209 --control-url http://127.0.0.1:8090
+```
+
+### `canarymesh validate-scenario`
+
+Validates YAML rollout scenario file syntax, steps, and durations before execution.
+
+```bash
+canarymesh validate-scenario scenarios/progressive-rollout.yaml
+```
+
 ### `canarymesh mock`
 
-Starts mock v1 (stable) and v2 (canary) servers for testing.
+Starts mock v1 (stable) and v2 (canary) servers for testing with optional fault injection.
 
 ```bash
 canarymesh mock --port-v1 8081 --port-v2 8082 --inject-errors --error-rate 25
