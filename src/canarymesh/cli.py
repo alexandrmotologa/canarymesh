@@ -13,6 +13,7 @@ from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.table import Table
 
+from canarymesh import __version__
 from canarymesh.api.app import create_control_app
 from canarymesh.config import CanaryMeshConfig, SlaThresholds, UpstreamConfig
 from canarymesh.controller.alert_dispatcher import AlertDispatcher
@@ -37,24 +38,81 @@ app = typer.Typer(
 console = Console()
 
 
+def version_callback(value: bool) -> None:
+    """Callback for --version option."""
+    if value:
+        console.print(
+            f"[bold cyan]CanaryMesh[/bold cyan] version [bold green]{__version__}[/bold green]"
+        )
+        raise typer.Exit()
+
+
+@app.callback()
+def main(
+    version: bool | None = typer.Option(
+        None,
+        "--version",
+        "-v",
+        help="Show CanaryMesh version and exit.",
+        callback=version_callback,
+        is_eager=True,
+    ),
+) -> None:
+    """Dynamic traffic splitting and automated rollback edge reverse proxy."""
+
+
+@app.command()
+def version() -> None:
+    """Show CanaryMesh version."""
+    console.print(
+        f"[bold cyan]CanaryMesh[/bold cyan] version [bold green]{__version__}[/bold green]"
+    )
+
+
 @app.command()
 def start(
-    stable: str = typer.Option("http://127.0.0.1:8081", "--stable", "-s", help="Stable upstream URL (v1)"),
-    canary: str = typer.Option("http://127.0.0.1:8082", "--canary", "-c", help="Canary upstream URL (v2)"),
-    weight: float = typer.Option(0.0, "--weight", "-w", help="Initial canary traffic percentage (0-100)"),
+    stable: str = typer.Option(
+        "http://127.0.0.1:8081", "--stable", "-s", help="Stable upstream URL (v1)"
+    ),
+    canary: str = typer.Option(
+        "http://127.0.0.1:8082", "--canary", "-c", help="Canary upstream URL (v2)"
+    ),
+    weight: float = typer.Option(
+        0.0, "--weight", "-w", help="Initial canary traffic percentage (0-100)"
+    ),
     proxy_port: int = typer.Option(8080, "--proxy-port", help="Edge proxy listening port"),
     proxy_host: str = typer.Option("0.0.0.0", "--proxy-host", help="Edge proxy listening host"),
     control_port: int = typer.Option(8090, "--control-port", help="Control plane REST API port"),
-    control_host: str = typer.Option("0.0.0.0", "--control-host", help="Control plane REST API host"),
-    scenario: str | None = typer.Option(None, "--scenario", help="Path to progressive rollout YAML scenario"),
-    dashboard: bool = typer.Option(False, "--dashboard", "-d", help="Run interactive split-screen TUI"),
-    shadow: bool = typer.Option(False, "--shadow", help="Enable dark launch traffic shadowing to Canary"),
-    shadow_percent: float = typer.Option(100.0, "--shadow-percent", help="Shadow traffic percentage"),
-    max_error_rate: float = typer.Option(1.0, "--max-error-rate", help="Rollback threshold 5xx error rate %"),
-    max_p99_ms: float = typer.Option(350.0, "--max-p99-ms", help="Rollback threshold p99 latency ms"),
-    min_samples: int = typer.Option(10, "--min-samples", help="Min samples before evaluating rollback"),
-    relative_ratio: float = typer.Option(2.0, "--relative-ratio", help="Max Canary/Stable p99 latency ratio"),
-    relative_err_diff: float = typer.Option(3.0, "--relative-err-diff", help="Max Canary - Stable 5xx% diff"),
+    control_host: str = typer.Option(
+        "0.0.0.0", "--control-host", help="Control plane REST API host"
+    ),
+    scenario: str | None = typer.Option(
+        None, "--scenario", help="Path to progressive rollout YAML scenario"
+    ),
+    dashboard: bool = typer.Option(
+        False, "--dashboard", "-d", help="Run interactive split-screen TUI"
+    ),
+    shadow: bool = typer.Option(
+        False, "--shadow", help="Enable dark launch traffic shadowing to Canary"
+    ),
+    shadow_percent: float = typer.Option(
+        100.0, "--shadow-percent", help="Shadow traffic percentage"
+    ),
+    max_error_rate: float = typer.Option(
+        1.0, "--max-error-rate", help="Rollback threshold 5xx error rate %"
+    ),
+    max_p99_ms: float = typer.Option(
+        350.0, "--max-p99-ms", help="Rollback threshold p99 latency ms"
+    ),
+    min_samples: int = typer.Option(
+        10, "--min-samples", help="Min samples before evaluating rollback"
+    ),
+    relative_ratio: float = typer.Option(
+        2.0, "--relative-ratio", help="Max Canary/Stable p99 latency ratio"
+    ),
+    relative_err_diff: float = typer.Option(
+        3.0, "--relative-err-diff", help="Max Canary - Stable 5xx% diff"
+    ),
     webhook: list[str] | None = typer.Option(None, "--webhook", help="Webhook notification URLs"),
 ):
     """Start CanaryMesh edge proxy, control plane, and automated rollback guard."""
@@ -123,7 +181,9 @@ async def _start_runtime(
     router = TrafficRouter(cfg)
     telemetry = TelemetryManager(window_size_seconds=cfg.window_size_seconds)
     post_mortem = PostMortemEngine()
-    alert_dispatcher = AlertDispatcher(webhook_urls=cfg.alert_webhooks, post_mortem_engine=post_mortem)
+    alert_dispatcher = AlertDispatcher(
+        webhook_urls=cfg.alert_webhooks, post_mortem_engine=post_mortem
+    )
     health_prober = ActiveHealthProber(cfg.stable, cfg.canary)
     shadow_engine = ShadowEngine(
         canary_target=cfg.canary,
@@ -191,7 +251,9 @@ async def _start_runtime(
             f"Routing: [bold blue]Stable ({100.0 - weight:.1f}%)[/bold blue] -> {stable} | "
             f"[bold yellow]Canary ({weight:.1f}%)[/bold yellow] -> {canary}"
         )
-        console.print(f"Web Console: [bold cyan]http://{control_host}:{control_port}/ui[/bold cyan]")
+        console.print(
+            f"Web Console: [bold cyan]http://{control_host}:{control_port}/ui[/bold cyan]"
+        )
 
     try:
         if dashboard:
@@ -220,7 +282,9 @@ async def _start_runtime(
 @app.command()
 def set_weight(
     weight: float = typer.Argument(..., help="New canary traffic percentage (0-100)"),
-    control_url: str = typer.Option("http://127.0.0.1:8090", "--control-url", help="Control plane URL"),
+    control_url: str = typer.Option(
+        "http://127.0.0.1:8090", "--control-url", help="Control plane URL"
+    ),
 ):
     """Update canary weight on a running CanaryMesh instance."""
     resp = httpx.post(f"{control_url.rstrip('/')}/api/v1/canary/weight", json={"weight": weight})
@@ -236,7 +300,9 @@ def set_weight(
 
 @app.command()
 def abort(
-    control_url: str = typer.Option("http://127.0.0.1:8090", "--control-url", help="Control plane URL"),
+    control_url: str = typer.Option(
+        "http://127.0.0.1:8090", "--control-url", help="Control plane URL"
+    ),
 ):
     """Trigger an emergency rollback on a running CanaryMesh instance."""
     resp = httpx.post(f"{control_url.rstrip('/')}/api/v1/canary/abort")
@@ -248,7 +314,9 @@ def abort(
 
 @app.command()
 def promote(
-    control_url: str = typer.Option("http://127.0.0.1:8090", "--control-url", help="Control plane URL"),
+    control_url: str = typer.Option(
+        "http://127.0.0.1:8090", "--control-url", help="Control plane URL"
+    ),
 ):
     """Promote canary to 100% traffic on a running CanaryMesh instance."""
     resp = httpx.post(f"{control_url.rstrip('/')}/api/v1/canary/promote")
@@ -260,7 +328,9 @@ def promote(
 
 @app.command()
 def status(
-    control_url: str = typer.Option("http://127.0.0.1:8090", "--control-url", help="Control plane URL"),
+    control_url: str = typer.Option(
+        "http://127.0.0.1:8090", "--control-url", help="Control plane URL"
+    ),
 ):
     """Query and display active status from running CanaryMesh instance."""
     try:
@@ -286,12 +356,16 @@ def status(
 
         console.print(table)
     except Exception as exc:
-        console.print(f"[bold red]Could not connect to control plane at {control_url}:[/bold red] {exc}")
+        console.print(
+            f"[bold red]Could not connect to control plane at {control_url}:[/bold red] {exc}"
+        )
 
 
 @app.command()
 def rules(
-    control_url: str = typer.Option("http://127.0.0.1:8090", "--control-url", help="Control plane URL"),
+    control_url: str = typer.Option(
+        "http://127.0.0.1:8090", "--control-url", help="Control plane URL"
+    ),
 ):
     """List active path prefix and header routing rules."""
     try:
@@ -308,7 +382,9 @@ def rules(
         for p in data.get("path_rules", []):
             table.add_row("Path Prefix", p["id"], p["path_prefix"], p["target"])
         for h in data.get("header_rules", []):
-            table.add_row("Header Match", h["id"], f"{h['header_name']} ~ {h['header_pattern']}", h["target"])
+            table.add_row(
+                "Header Match", h["id"], f"{h['header_name']} ~ {h['header_pattern']}", h["target"]
+            )
 
         console.print(table)
     except Exception as exc:
@@ -317,8 +393,12 @@ def rules(
 
 @app.command()
 def incidents(
-    control_url: str = typer.Option("http://127.0.0.1:8090", "--control-url", help="Control plane URL"),
-    incident_id: str | None = typer.Argument(None, help="Optional incident ID to view full markdown report"),
+    control_url: str = typer.Option(
+        "http://127.0.0.1:8090", "--control-url", help="Control plane URL"
+    ),
+    incident_id: str | None = typer.Argument(
+        None, help="Optional incident ID to view full markdown report"
+    ),
 ):
     """List or inspect rollback incident post-mortem reports."""
     try:
@@ -326,7 +406,9 @@ def incidents(
             resp = httpx.get(f"{control_url.rstrip('/')}/api/v1/canary/incidents/{incident_id}")
             resp.raise_for_status()
             report = resp.json()["incident"]
-            syntax = Syntax(report["markdown_summary"], "markdown", theme="monokai", line_numbers=False)
+            syntax = Syntax(
+                report["markdown_summary"], "markdown", theme="monokai", line_numbers=False
+            )
             console.print(Panel(syntax, title=f"Incident Post-Mortem: {incident_id}", expand=False))
         else:
             resp = httpx.get(f"{control_url.rstrip('/')}/api/v1/canary/incidents")
@@ -378,7 +460,9 @@ def validate_scenario(
         console.print(f"[bold green]Scenario '{name}' is valid![/bold green]")
         console.print(f"Total Steps: {len(steps)} | Total Duration: {total_duration}s")
         for idx, s in enumerate(steps, 1):
-            console.print(f"  Step {idx}: [yellow]{s.get('weight')}%[/yellow] for {s.get('duration_seconds')}s")
+            console.print(
+                f"  Step {idx}: [yellow]{s.get('weight')}%[/yellow] for {s.get('duration_seconds')}s"
+            )
     except Exception as exc:
         console.print(f"[bold red]Invalid scenario file:[/bold red] {exc}")
         raise typer.Exit(1)
@@ -388,13 +472,19 @@ def validate_scenario(
 def mock(
     port_v1: int = typer.Option(8081, "--port-v1", help="Port for mock v1 stable service"),
     port_v2: int = typer.Option(8082, "--port-v2", help="Port for mock v2 canary service"),
-    inject_errors: bool = typer.Option(False, "--inject-errors", help="Inject 500 errors into v2 canary"),
+    inject_errors: bool = typer.Option(
+        False, "--inject-errors", help="Inject 500 errors into v2 canary"
+    ),
     error_rate: float = typer.Option(30.0, "--error-rate", help="Injected error rate percentage"),
 ):
     """Start local mock v1 and v2 services for testing."""
-    console.print(f"[bold green]Starting Mock Services[/bold green] -> Stable :{port_v1}, Canary :{port_v2}")
+    console.print(
+        f"[bold green]Starting Mock Services[/bold green] -> Stable :{port_v1}, Canary :{port_v2}"
+    )
     if inject_errors:
-        console.print(f"[yellow]Fault injection enabled on Canary with {error_rate}% error rate[/yellow]")
+        console.print(
+            f"[yellow]Fault injection enabled on Canary with {error_rate}% error rate[/yellow]"
+        )
     asyncio.run(run_mock_servers(port_v1, port_v2, inject_errors, error_rate))
 
 
@@ -405,7 +495,11 @@ def simulate(
     duration: int = typer.Option(20, "--duration", help="Simulation duration in seconds"),
 ):
     """Run concurrent synthetic traffic against CanaryMesh proxy."""
-    asyncio.run(run_traffic_simulation(target_url=target, requests_per_second=rate, duration_seconds=duration))
+    asyncio.run(
+        run_traffic_simulation(
+            target_url=target, requests_per_second=rate, duration_seconds=duration
+        )
+    )
 
 
 if __name__ == "__main__":

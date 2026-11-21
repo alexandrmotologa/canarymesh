@@ -16,6 +16,7 @@ logger = logging.getLogger("canarymesh.prober")
 @dataclass
 class UpstreamHealth:
     """Current health state of an individual upstream target."""
+
     name: str
     target_url: str
     health_path: str

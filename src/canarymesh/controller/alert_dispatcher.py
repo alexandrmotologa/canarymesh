@@ -78,7 +78,11 @@ class AlertDispatcher:
                         "description": f"**Breach Reason**: {reason}\nCanary traffic has been immediately zeroed out.",
                         "color": 15673924,  # Bright Red
                         "fields": [
-                            {"name": "Previous Weight", "value": f"{previous_weight:.1f}%", "inline": True},
+                            {
+                                "name": "Previous Weight",
+                                "value": f"{previous_weight:.1f}%",
+                                "inline": True,
+                            },
                             {"name": "Current Weight", "value": "0.0%", "inline": True},
                             {"name": "5xx Error Rate", "value": f"{err_rate:.2f}%", "inline": True},
                             {"name": "p99 Latency", "value": f"{p99:.1f} ms", "inline": True},
@@ -96,11 +100,18 @@ class AlertDispatcher:
                 "blocks": [
                     {
                         "type": "header",
-                        "text": {"type": "plain_text", "text": "🚨 CanaryMesh Emergency Rollback", "emoji": True},
+                        "text": {
+                            "type": "plain_text",
+                            "text": "🚨 CanaryMesh Emergency Rollback",
+                            "emoji": True,
+                        },
                     },
                     {
                         "type": "section",
-                        "text": {"type": "mrkdwn", "text": f"*Reason:* {reason}\n*Action:* Shifted from *{previous_weight:.1f}%* to *0.0%*"},
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": f"*Reason:* {reason}\n*Action:* Shifted from *{previous_weight:.1f}%* to *0.0%*",
+                        },
                     },
                     {
                         "type": "section",

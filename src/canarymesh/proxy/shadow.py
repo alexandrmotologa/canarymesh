@@ -18,6 +18,7 @@ logger = logging.getLogger("canarymesh.shadow")
 @dataclass
 class ShadowDiffSample:
     """Detailed comparison record between Stable and Canary responses on shadowed traffic."""
+
     timestamp: str
     method: str
     path: str
@@ -79,7 +80,8 @@ class ShadowEngine:
 
         # Clean headers and mark as shadow
         shadow_headers = {
-            k: v for k, v in headers.items()
+            k: v
+            for k, v in headers.items()
             if k.lower() not in ("host", "content-length", "connection")
         }
         shadow_headers["x-canary-shadow"] = "true"
@@ -107,7 +109,9 @@ class ShadowEngine:
             if status_match:
                 self.total_status_matches += 1
 
-            latency_delta = round(latency_ms - stable_latency_ms, 2) if stable_latency_ms is not None else None
+            latency_delta = (
+                round(latency_ms - stable_latency_ms, 2) if stable_latency_ms is not None else None
+            )
 
             sample = ShadowDiffSample(
                 timestamp=datetime.datetime.now(datetime.UTC).isoformat(),
@@ -116,7 +120,9 @@ class ShadowEngine:
                 stable_status=stable_status,
                 canary_status=canary_status,
                 status_match=status_match,
-                stable_latency_ms=round(stable_latency_ms, 2) if stable_latency_ms is not None else None,
+                stable_latency_ms=round(stable_latency_ms, 2)
+                if stable_latency_ms is not None
+                else None,
                 canary_latency_ms=round(latency_ms, 2),
                 latency_delta_ms=latency_delta,
             )
@@ -138,7 +144,9 @@ class ShadowEngine:
                 stable_status=stable_status,
                 canary_status=502,
                 status_match=False,
-                stable_latency_ms=round(stable_latency_ms, 2) if stable_latency_ms is not None else None,
+                stable_latency_ms=round(stable_latency_ms, 2)
+                if stable_latency_ms is not None
+                else None,
                 canary_latency_ms=round(latency_ms, 2),
                 latency_delta_ms=None,
             )

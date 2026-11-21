@@ -81,6 +81,8 @@ async def run_traffic_simulation(
     console.print("\n[bold green]Simulation Completed![/bold green]")
     console.print(f"Total Requests: {stats['total']}")
     console.print(f"200 OK: {stats['status_200']} | 500 Error: {stats['status_500']}")
-    console.print(f"Routed Stable: {stats['routed_stable']} | Routed Canary: {stats['routed_canary']}")
+    console.print(
+        f"Routed Stable: {stats['routed_stable']} | Routed Canary: {stats['routed_canary']}"
+    )
 
     return stats

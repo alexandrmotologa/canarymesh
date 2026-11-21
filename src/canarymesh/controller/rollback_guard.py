@@ -27,6 +27,7 @@ class GuardState(str, Enum):
 @dataclass
 class TripEvent:
     """Historical record of an automated rollback event."""
+
     timestamp: str
     reason: str
     previous_weight: float

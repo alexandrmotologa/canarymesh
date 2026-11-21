@@ -13,6 +13,7 @@ logger = logging.getLogger("canarymesh.postmortem")
 @dataclass
 class PostMortemReport:
     """Structured report documenting an emergency rollback incident."""
+
     incident_id: str
     timestamp: str
     reason: str

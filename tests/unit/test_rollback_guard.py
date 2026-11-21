@@ -13,11 +13,13 @@ class MockAlertDispatcher:
         self.dispatched = []
 
     async def dispatch_rollback_alert(self, reason, metrics, previous_weight):
-        self.dispatched.append({
-            "reason": reason,
-            "metrics": metrics,
-            "previous_weight": previous_weight,
-        })
+        self.dispatched.append(
+            {
+                "reason": reason,
+                "metrics": metrics,
+                "previous_weight": previous_weight,
+            }
+        )
 
 
 @pytest.fixture

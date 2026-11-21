@@ -14,7 +14,9 @@ from canarymesh.proxy.stats import TelemetryManager
 from canarymesh.tui.widgets import build_dashboard_layout
 
 EDGE_PATH = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-OUT_FILE = Path(r"C:\Users\alexander\.gemini\antigravity-ide\scratch\canarymesh\docs\images\terminal_dashboard.png")
+OUT_FILE = Path(
+    r"C:\Users\alexander\.gemini\antigravity-ide\scratch\canarymesh\docs\images\terminal_dashboard.png"
+)
 
 # Setup simulated state
 cfg = CanaryMeshConfig(
@@ -41,7 +43,12 @@ telemetry.record("canary", 500, 95.0)
 output_buffer = io.StringIO()
 console = Console(record=True, file=output_buffer, width=130, height=38, force_terminal=True)
 layout = build_dashboard_layout(
-    {"proxy_port": 8080, "control_port": 8090, "stable": cfg.stable.model_dump(), "canary": cfg.canary.model_dump()},
+    {
+        "proxy_port": 8080,
+        "control_port": 8090,
+        "stable": cfg.stable.model_dump(),
+        "canary": cfg.canary.model_dump(),
+    },
     router,
     telemetry,
     guard,
@@ -122,7 +129,9 @@ html_wrapped = f"""<!DOCTYPE html>
 </body>
 </html>"""
 
-temp_html = Path(r"C:\Users\alexander\.gemini\antigravity-ide\scratch\canarymesh\docs\images\temp_term.html")
+temp_html = Path(
+    r"C:\Users\alexander\.gemini\antigravity-ide\scratch\canarymesh\docs\images\temp_term.html"
+)
 temp_html.write_text(html_wrapped, encoding="utf-8")
 
 cmd = [

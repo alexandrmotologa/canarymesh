@@ -52,7 +52,9 @@ def create_proxy_app(forwarder: StreamingForwarder) -> FastAPI:
 
         try:
             import websockets
+
             async with websockets.connect(target_ws_url) as server_ws:
+
                 async def client_to_server():
                     try:
                         while True:

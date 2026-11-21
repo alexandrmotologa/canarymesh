@@ -30,7 +30,9 @@ class ScenarioLoadRequest(BaseModel):
 
 class ShadowUpdateRequest(BaseModel):
     enabled: bool = Field(..., description="Toggle traffic shadowing to Canary")
-    percentage: float = Field(default=100.0, ge=0.0, le=100.0, description="Mirror traffic percentage")
+    percentage: float = Field(
+        default=100.0, ge=0.0, le=100.0, description="Mirror traffic percentage"
+    )
 
 
 class PathRuleCreateRequest(BaseModel):
@@ -264,6 +266,7 @@ def create_api_router(
     @router.get("/live")
     async def live_stream():
         """Server-Sent Events streaming telemetry snapshot every second."""
+
         async def event_generator():
             while True:
                 data = {

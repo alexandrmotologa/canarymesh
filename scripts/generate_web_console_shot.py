@@ -161,4 +161,6 @@ cmd = [
 
 subprocess.run(cmd, check=True)
 TEMP_HTML.unlink(missing_ok=True)
-print(f"Captured Web Operations Console screenshot: {OUT_FILE.exists()} ({OUT_FILE.stat().st_size} bytes)")
+print(
+    f"Captured Web Operations Console screenshot: {OUT_FILE.exists()} ({OUT_FILE.stat().st_size} bytes)"
+)

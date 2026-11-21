@@ -69,13 +69,17 @@ def test_router_weighted_distribution():
     # Test 0% canary
     router_zero = create_test_router(weight=0.0)
     for i in range(100):
-        decision = router_zero.route(headers={}, cookies={"canary_session": f"sess-{i}"}, query_params={})
+        decision = router_zero.route(
+            headers={}, cookies={"canary_session": f"sess-{i}"}, query_params={}
+        )
         assert decision.upstream_name == "stable"
 
     # Test 100% canary
     router_full = create_test_router(weight=100.0)
     for i in range(100):
-        decision = router_full.route(headers={}, cookies={"canary_session": f"sess-{i}"}, query_params={})
+        decision = router_full.route(
+            headers={}, cookies={"canary_session": f"sess-{i}"}, query_params={}
+        )
         assert decision.upstream_name == "canary"
 
     # Test 30% canary over 1000 uniform sessions
@@ -83,7 +87,9 @@ def test_router_weighted_distribution():
     canary_count = 0
     total = 1000
     for i in range(total):
-        decision = router_split.route(headers={}, cookies={"canary_session": f"user-{i}"}, query_params={})
+        decision = router_split.route(
+            headers={}, cookies={"canary_session": f"user-{i}"}, query_params={}
+        )
         if decision.upstream_name == "canary":
             canary_count += 1
 

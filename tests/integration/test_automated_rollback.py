@@ -20,8 +20,12 @@ def test_environment():
     v2_app = create_mock_v2_app(canary_state)
 
     # In-memory transports for mock apps
-    v1_client = httpx.AsyncClient(transport=httpx.ASGITransport(app=v1_app), base_url="http://mock-stable")
-    v2_client = httpx.AsyncClient(transport=httpx.ASGITransport(app=v2_app), base_url="http://mock-canary")
+    v1_client = httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=v1_app), base_url="http://mock-stable"
+    )
+    v2_client = httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=v2_app), base_url="http://mock-canary"
+    )
 
     class CombinedMockTransport(httpx.AsyncBaseTransport):
         async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
@@ -105,7 +109,9 @@ async def test_automated_rollback_end_to_end(test_environment):
 
         # 5. Subsequent normal requests (without forced headers) route 100% to Stable
         for i in range(20):
-            resp = await client.get("/api/v1/orders", headers={"Cookie": f"canary_session=user-{i}"})
+            resp = await client.get(
+                "/api/v1/orders", headers={"Cookie": f"canary_session=user-{i}"}
+            )
             assert resp.status_code == 200
             assert resp.headers.get("x-canary-routed") == "stable"
 

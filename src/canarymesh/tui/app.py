@@ -20,6 +20,7 @@ def check_keyboard_input() -> str | None:
     """Non-blocking keyboard check supporting Windows and POSIX."""
     if os.name == "nt":
         import msvcrt
+
         if msvcrt.kbhit():
             try:
                 ch = msvcrt.getch()

@@ -65,7 +65,9 @@ class StreamingForwarder:
         path = request.url.path
         query = request.url.query
 
-        decision: RouteDecision = self.router.route(headers_dict, cookies_dict, query_dict, path=path)
+        decision: RouteDecision = self.router.route(
+            headers_dict, cookies_dict, query_dict, path=path
+        )
         target_upstream = decision.target
         upstream_name = decision.upstream_name
 
@@ -76,8 +78,7 @@ class StreamingForwarder:
 
         # Clean headers to forward
         forward_headers = {
-            k: v for k, v in request.headers.items()
-            if k.lower() not in HOP_BY_HOP_HEADERS
+            k: v for k, v in request.headers.items() if k.lower() not in HOP_BY_HOP_HEADERS
         }
         client_host = request.client.host if request.client else "unknown"
         forward_headers["x-forwarded-for"] = client_host
@@ -102,7 +103,11 @@ class StreamingForwarder:
             req_content = None
             body_bytes = None
             if request.method not in ("GET", "HEAD"):
-                if self.shadow_engine and self.shadow_engine.should_shadow() and upstream_name == "stable":
+                if (
+                    self.shadow_engine
+                    and self.shadow_engine.should_shadow()
+                    and upstream_name == "stable"
+                ):
                     body_bytes = await request.body()
                     req_content = body_bytes
                 else:
@@ -123,7 +128,11 @@ class StreamingForwarder:
             status_code = upstream_response.status_code
 
             # Trigger background shadow mirroring with live diff comparison
-            if upstream_name == "stable" and self.shadow_engine and self.shadow_engine.should_shadow():
+            if (
+                upstream_name == "stable"
+                and self.shadow_engine
+                and self.shadow_engine.should_shadow()
+            ):
                 asyncio.create_task(
                     self.shadow_engine.mirror_request(
                         method=request.method,
@@ -141,7 +150,8 @@ class StreamingForwarder:
 
             # Build response headers, removing hop-by-hop headers
             response_headers: dict[str, str] = {
-                k: v for k, v in upstream_response.headers.items()
+                k: v
+                for k, v in upstream_response.headers.items()
                 if k.lower() not in HOP_BY_HOP_HEADERS
             }
             response_headers["x-canary-routed"] = upstream_name
@@ -181,7 +191,9 @@ class StreamingForwarder:
             latency_ms = (time.perf_counter() - start_time) * 1000.0
             self.telemetry.record(upstream_name, 504, latency_ms)
             return Response(
-                content=b'{"error": "Gateway Timeout", "upstream": "' + upstream_name.encode() + b'"}',
+                content=b'{"error": "Gateway Timeout", "upstream": "'
+                + upstream_name.encode()
+                + b'"}',
                 status_code=504,
                 media_type="application/json",
                 headers={"x-canary-routed": upstream_name, "x-request-id": request_id},

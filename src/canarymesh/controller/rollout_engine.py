@@ -73,7 +73,9 @@ class RolloutEngine:
             raise TypeError("Expected YAML filepath or dictionary")
 
         steps = [
-            RolloutStep(weight=float(s["weight"]), duration_seconds=int(s.get("duration_seconds", 0)))
+            RolloutStep(
+                weight=float(s["weight"]), duration_seconds=int(s.get("duration_seconds", 0))
+            )
             for s in data.get("steps", [])
         ]
         sla_data = data.get("sla")
@@ -169,9 +171,7 @@ class RolloutEngine:
 
                     # Verify rollback guard health and prober status
                     if self.guard.state == GuardState.TRIPPED:
-                        await self.abort(
-                            f"RollbackGuard tripped: {self.guard.last_trip_reason}"
-                        )
+                        await self.abort(f"RollbackGuard tripped: {self.guard.last_trip_reason}")
                         return
 
                     if self.health_prober and not self.health_prober.is_canary_healthy():
@@ -204,7 +204,9 @@ class RolloutEngine:
                 "weight": s.weight,
                 "duration_seconds": s.duration_seconds,
                 "elapsed_seconds": round(self.step_elapsed_seconds, 1),
-                "remaining_seconds": max(0, round(s.duration_seconds - self.step_elapsed_seconds, 1)),
+                "remaining_seconds": max(
+                    0, round(s.duration_seconds - self.step_elapsed_seconds, 1)
+                ),
             }
 
         return {

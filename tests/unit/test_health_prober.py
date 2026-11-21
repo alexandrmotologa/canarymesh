@@ -49,7 +49,9 @@ async def test_prober_healthy_flow(mock_health_transport):
 @pytest.mark.asyncio
 async def test_prober_failure_threshold(mock_health_transport):
     stable_cfg = UpstreamConfig(name="stable", url="http://mock-stable")
-    canary_cfg = UpstreamConfig(name="canary", url="http://mock-canary", health_path="/healthz-fail")
+    canary_cfg = UpstreamConfig(
+        name="canary", url="http://mock-canary", health_path="/healthz-fail"
+    )
 
     prober = ActiveHealthProber(
         stable_cfg,

@@ -43,12 +43,16 @@ def test_dynamic_rule_registration():
 
     # Add dynamic path rule
     rule_id = router.add_path_rule(PathRoutingRule(path_prefix="/experimental", target="canary"))
-    decision_after = router.route(headers={}, cookies={}, query_params={}, path="/experimental/test")
+    decision_after = router.route(
+        headers={}, cookies={}, query_params={}, path="/experimental/test"
+    )
     assert decision_after.upstream_name == "canary"
 
     # Remove dynamic path rule
     removed = router.remove_path_rule(rule_id)
     assert removed is True
 
-    decision_reverted = router.route(headers={}, cookies={}, query_params={}, path="/experimental/test")
+    decision_reverted = router.route(
+        headers={}, cookies={}, query_params={}, path="/experimental/test"
+    )
     assert decision_reverted.upstream_name == "stable"

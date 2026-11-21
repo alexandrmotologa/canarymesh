@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [ main ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
 
@@ -32,6 +33,10 @@ jobs:
       - name: Run ruff check
         run: |
           uv run ruff check .
+
+      - name: Run ruff format check
+        run: |
+          uv run ruff format --check .
 
       - name: Run pytest
         run: |

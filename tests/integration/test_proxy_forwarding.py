@@ -17,8 +17,12 @@ def proxy_client():
     canary_state = CanaryState()
     v2_app = create_mock_v2_app(canary_state)
 
-    v1_client = httpx.AsyncClient(transport=httpx.ASGITransport(app=v1_app), base_url="http://mock-stable")
-    v2_client = httpx.AsyncClient(transport=httpx.ASGITransport(app=v2_app), base_url="http://mock-canary")
+    v1_client = httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=v1_app), base_url="http://mock-stable"
+    )
+    v2_client = httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=v2_app), base_url="http://mock-canary"
+    )
 
     class CombinedMockTransport(httpx.AsyncBaseTransport):
         async def handle_async_request(self, request: httpx.Request) -> httpx.Response:

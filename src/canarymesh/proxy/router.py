@@ -12,6 +12,7 @@ from canarymesh.config import CanaryMeshConfig, HeaderRoutingRule, PathRoutingRu
 @dataclass
 class RouteDecision:
     """Outcome of a traffic routing evaluation."""
+
     target: UpstreamConfig
     upstream_name: str
     reason: str
@@ -35,7 +36,12 @@ class TrafficRouter:
         for rule in self.header_rules:
             if rule.enabled:
                 self._compiled_header_rules.append(
-                    (rule.id, rule.header_name.lower(), re.compile(rule.header_pattern), rule.target)
+                    (
+                        rule.id,
+                        rule.header_name.lower(),
+                        re.compile(rule.header_pattern),
+                        rule.target,
+                    )
                 )
 
     @property

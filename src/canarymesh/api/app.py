@@ -1,6 +1,5 @@
 """FastAPI factory for the CanaryMesh control plane."""
 
-
 from fastapi import FastAPI
 
 from canarymesh.api.routes import create_api_router

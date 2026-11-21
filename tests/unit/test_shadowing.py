@@ -13,10 +13,12 @@ def mock_shadow_transport():
     shadow_records = []
 
     async def app_handler(request: httpx.Request) -> httpx.Response:
-        shadow_records.append({
-            "url": str(request.url),
-            "headers": dict(request.headers),
-        })
+        shadow_records.append(
+            {
+                "url": str(request.url),
+                "headers": dict(request.headers),
+            }
+        )
         return httpx.Response(200, json={"status": "shadow_ok"})
 
     class CustomTransport(httpx.AsyncBaseTransport):

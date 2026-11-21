@@ -13,6 +13,7 @@ def mock_webhook_client():
 
     async def app_handler(request: httpx.Request) -> httpx.Response:
         import json
+
         url_str = str(request.url)
         captured_payloads[url_str] = json.loads(request.content)
         return httpx.Response(200, json={"status": "received"})

@@ -1,4 +1,5 @@
 """Pytest fixtures and test configuration."""
+
 import pytest
 
 

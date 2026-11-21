@@ -67,7 +67,9 @@ def create_upstream_panel(
 
     # Window metrics
     table.add_row("[underline]Active Window (60s)[/underline]", "")
-    table.add_row("Throughput:", f"[bold]{metrics.rps:.1f}[/bold] req/s ({metrics.total_requests} reqs)")
+    table.add_row(
+        "Throughput:", f"[bold]{metrics.rps:.1f}[/bold] req/s ({metrics.total_requests} reqs)"
+    )
 
     # Status breakdown
     table.add_row("Status 2xx (Success):", f"[green]{metrics.status_2xx}[/green]")
@@ -76,8 +78,14 @@ def create_upstream_panel(
     err_style = "bold red" if metrics.error_rate_percent > 0 else "dim"
     table.add_row("Status 5xx (Errors):", f"[{err_style}]{metrics.status_5xx}[/{err_style}]")
 
-    err_rate_color = "red" if metrics.error_rate_percent > 1.0 else ("yellow" if metrics.error_rate_percent > 0 else "green")
-    table.add_row("5xx Error Rate:", f"[{err_rate_color}]{metrics.error_rate_percent:.2f}%[/{err_rate_color}]")
+    err_rate_color = (
+        "red"
+        if metrics.error_rate_percent > 1.0
+        else ("yellow" if metrics.error_rate_percent > 0 else "green")
+    )
+    table.add_row(
+        "5xx Error Rate:", f"[{err_rate_color}]{metrics.error_rate_percent:.2f}%[/{err_rate_color}]"
+    )
     table.add_row("", "")
 
     # Latency quantiles
@@ -123,9 +131,15 @@ def create_guard_and_rollout_panel(guard: RollbackGuard, rollout: RolloutEngine)
 
     r_status = rollout.get_status()
     r_state = r_status["state"]
-    r_color = "green" if r_state in ("RUNNING", "COMPLETED") else ("yellow" if r_state == "PAUSED" else "dim")
+    r_color = (
+        "green"
+        if r_state in ("RUNNING", "COMPLETED")
+        else ("yellow" if r_state == "PAUSED" else "dim")
+    )
     rollout_table.add_row("Rollout Stage:", f"[{r_color}]{r_state}[/{r_color}]")
-    rollout_table.add_row("Active Scenario:", f"{r_status['scenario_name'] or 'None (Manual Weight)'}")
+    rollout_table.add_row(
+        "Active Scenario:", f"{r_status['scenario_name'] or 'None (Manual Weight)'}"
+    )
 
     step = r_status.get("current_step")
     if step:
@@ -138,7 +152,9 @@ def create_guard_and_rollout_panel(guard: RollbackGuard, rollout: RolloutEngine)
 
     grid.add_row(
         Panel(guard_table, title="[bold]Automated Rollback Guard[/bold]", border_style="grey37"),
-        Panel(rollout_table, title="[bold]Progressive Rollout Engine[/bold]", border_style="grey37"),
+        Panel(
+            rollout_table, title="[bold]Progressive Rollout Engine[/bold]", border_style="grey37"
+        ),
     )
     return Panel(grid, border_style="dim", height=7)
 

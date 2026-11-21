@@ -26,7 +26,9 @@ def api_test_client():
     post_mortem = PostMortemEngine()
     health_prober = ActiveHealthProber(cfg.stable, cfg.canary)
     shadow_engine = ShadowEngine(cfg.canary, telemetry, enabled=False)
-    guard = RollbackGuard(router=router, telemetry=telemetry, sla=cfg.sla, health_prober=health_prober)
+    guard = RollbackGuard(
+        router=router, telemetry=telemetry, sla=cfg.sla, health_prober=health_prober
+    )
     rollout = RolloutEngine(router=router, guard=guard, health_prober=health_prober)
 
     app = create_control_app(
@@ -59,7 +61,9 @@ async def test_dynamic_path_and_header_rules_api(api_test_client):
     client, _, _, _router, _ = api_test_client
     async with client as c:
         # 1. Add path rule
-        resp = await c.post("/api/v1/canary/rules/path", json={"path_prefix": "/checkout", "target": "canary"})
+        resp = await c.post(
+            "/api/v1/canary/rules/path", json={"path_prefix": "/checkout", "target": "canary"}
+        )
         assert resp.status_code == 200
         data = resp.json()
         path_rule_id = data["id"]
@@ -142,7 +146,9 @@ async def test_shadow_and_diff_api(api_test_client):
 @pytest.mark.asyncio
 async def test_incidents_and_download_api(api_test_client):
     client, post_mortem, _, _, _ = api_test_client
-    report = post_mortem.record_incident("Test SLA breach", 20.0, {"error_rate_percent": 15.0, "p99_ms": 220.0})
+    report = post_mortem.record_incident(
+        "Test SLA breach", 20.0, {"error_rate_percent": 15.0, "p99_ms": 220.0}
+    )
 
     async with client as c:
         # List incidents

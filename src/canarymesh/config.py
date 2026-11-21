@@ -8,6 +8,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class UpstreamConfig(BaseModel):
     """Configuration for an upstream target service."""
+
     name: str
     url: str
     timeout_seconds: float = Field(default=10.0, ge=0.1, le=120.0)
@@ -16,6 +17,7 @@ class UpstreamConfig(BaseModel):
 
 class SlaThresholds(BaseModel):
     """SLA thresholds evaluated by the automated rollback guard."""
+
     max_error_rate_percent: float = Field(default=1.0, ge=0.0, le=100.0)
     max_p99_latency_ms: float = Field(default=350.0, ge=1.0)
     min_sample_size: int = Field(default=10, ge=1)
@@ -47,6 +49,7 @@ class SlaThresholds(BaseModel):
 
 class HeaderRoutingRule(BaseModel):
     """Header-based routing rule."""
+
     id: str = Field(default_factory=lambda: uuid.uuid4().hex[:8])
     header_name: str
     header_pattern: str
@@ -56,6 +59,7 @@ class HeaderRoutingRule(BaseModel):
 
 class PathRoutingRule(BaseModel):
     """URL path prefix routing rule."""
+
     id: str = Field(default_factory=lambda: uuid.uuid4().hex[:8])
     path_prefix: str
     target: str = "canary"
@@ -64,6 +68,7 @@ class PathRoutingRule(BaseModel):
 
 class CanaryMeshConfig(BaseSettings):
     """Primary settings for CanaryMesh runtime."""
+
     model_config = SettingsConfigDict(env_prefix="CANARYMESH_", extra="ignore")
 
     proxy_host: str = "0.0.0.0"

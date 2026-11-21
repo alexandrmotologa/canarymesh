@@ -12,6 +12,7 @@ MAX_SLOT_LATENCY_SAMPLES = 200  # Cap per-second latency samples to prevent memo
 @dataclass
 class SecondSlot:
     """Telemetry metrics collected within a single 1-second interval."""
+
     epoch_second: int
     status_2xx: int = 0
     status_3xx: int = 0
@@ -39,6 +40,7 @@ class SecondSlot:
 @dataclass
 class WindowMetrics:
     """Aggregated metrics across the active sliding window."""
+
     upstream: str
     window_seconds: int
     total_requests: int
@@ -60,6 +62,7 @@ class WindowMetrics:
 @dataclass
 class ComparativeAnalysis:
     """Comparative analysis between Canary and Stable baseline."""
+
     stable_error_rate: float
     canary_error_rate: float
     error_diff_percent: float
@@ -259,7 +262,11 @@ class TelemetryManager:
                     f"p99 latency is {latency_ratio}x slower than Stable (threshold: {max_latency_ratio}x)"
                 )
 
-        summary = " | ".join(summary_reasons) if summary_reasons else "Canary metrics are healthy relative to Stable baseline"
+        summary = (
+            " | ".join(summary_reasons)
+            if summary_reasons
+            else "Canary metrics are healthy relative to Stable baseline"
+        )
 
         return ComparativeAnalysis(
             stable_error_rate=stable_m.error_rate_percent,
